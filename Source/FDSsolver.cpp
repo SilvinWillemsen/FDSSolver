@@ -170,14 +170,17 @@ bool FDSsolver::checkSyntax (StringArray& tokens)
     bool hasEqualsSign = false;
     for (int i = 0; i < tokens.size(); ++i)
     {
-        std::cout << tokens[i] << std::endl;
+        
         if (tokens[i] == "100")
         {
             hasEqualsSign = true;
         }
-        String firstChar = tokens[i].substring(0, 1);
         
-        int firstInt = firstChar.getIntValue();
+        String firstChar = tokens[i].substring(0, 1);
+        const char* test = static_cast<const char*> (firstChar.toUTF8());
+        
+        int firstInt = std::isdigit(*test) ? firstChar.getIntValue() : 9;
+        
         if (i == tokens.size() && firstInt != 3)
         {
             std::cout << "FDS doesn't end in u" << std::endl;
@@ -195,17 +198,21 @@ bool FDSsolver::checkSyntax (StringArray& tokens)
                 break;
             case 2:
                 notAllowedCharacters.push_back(1);
+                notAllowedCharacters.push_back(9);
                 break;
             case 3:
                 notAllowedCharacters.push_back(2);
                 notAllowedCharacters.push_back(3);
+                notAllowedCharacters.push_back(9);
+                break;
+            case 9:
                 break;
         }
         
         // if the character can't be after the previous one, give an error
-        if (std::find(notAllowedCharacters.begin(), notAllowedCharacters.end(), firstChar.getIntValue()) != notAllowedCharacters.end())
+        if (std::find(notAllowedCharacters.begin(), notAllowedCharacters.end(), firstInt) != notAllowedCharacters.end())
         {
-            std::cout << "Syntax error" << std::endl;
+            std::cout << "Syntax error: " << firstInt << std::endl;
             return false;
         }
         

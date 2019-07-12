@@ -56,6 +56,7 @@ private:
     
     String deltaString;
     OwnedArray<TextButton> buttons;
+    OwnedArray<TextButton> coeffButtons;
     OwnedArray<Label> labels;
     
     TextButton* createPM = nullptr;
@@ -78,7 +79,7 @@ private:
     TextButton* coeff = nullptr;
     TextButton* backSpace = nullptr;
     
-    Label* textBox = nullptr;
+    ScopedPointer<Label> textBox = nullptr;
     TextButton* uLN = nullptr;
     
     String equation;

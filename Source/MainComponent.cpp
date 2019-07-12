@@ -196,9 +196,12 @@ void MainComponent::resized()
     buttonArea.removeFromTop(GUIDefines::margin);
     
     Rectangle<int> coeffListArea = buttonArea;
-    for (int i = 0; i < coefficients.size(); ++i)
+    for (int i = 0; i < coeffButtons.size(); ++i)
     {
-        coeffLabels[i]->setBounds (coeffListArea.removeFromTop(GUIDefines::buttonHeight));
+        Rectangle<int> coeffRow = buttonArea.removeFromTop(GUIDefines::buttonHeight);
+        coeffButtons[i]->setBounds (coeffRow.removeFromLeft(buttonWidth));
+        coeffLabels[i]->setBounds (coeffRow);
+        buttonArea.removeFromTop(GUIDefines::margin);
     }
     
 }
@@ -231,9 +234,14 @@ void MainComponent::buttonClicked(Button* button)
             double value = addCoeffWindow->getValue();
             
             coefficients.set (coeffName, value);
-            String labelString = coeffName + " = " + String(value);
-            Label* label = new Label ();
-            coeffLabels.push_back (label);
+            
+            coeffButtons.add (new TextButton(coeffName));
+            coeffButtons[coeffButtons.size() - 1]->setButtonText (coeffName);
+            addAndMakeVisible (coeffButtons[coeffButtons.size() - 1]);
+            
+            String labelString = " = " + String(value);
+            coeffLabels.push_back (new Label());
+            Label* label = coeffLabels[coeffLabels.size() - 1];
             label->setText (labelString, dontSendNotification);
             label->setFont (Font("Latin Modern Math", "Italic", 16.0));
             label->setColour (Label::textColourId, Colours::white);
