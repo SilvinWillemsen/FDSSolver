@@ -66,6 +66,10 @@ MainComponent::MainComponent()
     uLN = buttons[buttons.size() - 1];
     uLN->setButtonText("u");
     
+    buttons.add (new TextButton("coeff"));
+    coeff = buttons[buttons.size() - 1];
+    coeff->setButtonText("coeff");
+    
     buttons.add (new TextButton("backspace"));
     backSpace = buttons[buttons.size() - 1];
     backSpace->setButtonText(String(CharPointer_UTF8 ("\xe2\x8c\xab")));
@@ -76,8 +80,10 @@ MainComponent::MainComponent()
     String fontName ("Latin Modern Math");
     String style ("Italic");
     textBox->setFont(Font(fontName, style, 16.0));
+    
     addAndMakeVisible(textBox);
-
+    
+    addCoeffWindow = new AddCoefficient();
     
     for (auto button : buttons)
     {
@@ -85,8 +91,10 @@ MainComponent::MainComponent()
         addAndMakeVisible (button);
     }
     
+    coeffLabels.reserve(1);
+    
     setSize (800, 600);
-
+    
     // specify the number of input and output channels that we want to open
     setAudioChannels (2, 2);
 }
@@ -109,8 +117,11 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
 
     // For more details, see the help for AudioProcessor::prepareToPlay()
     fs = sampleRate;
-    fdsSolver = new FDSsolver (&stringCode, debug ? 1.0 : fs);// / fs);
+    fdsSolver = new FDSsolver (&stringCode, debug ? 1.0 : 1.0 / fs);// / fs);
     fdsSolver->setGridSpacing (debug ? 1.0 : (1.0 / 80.0));
+    int stencilwidth = 7;
+    eq = new Equation (stencilwidth);
+    
 }
 
 void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill)
@@ -148,28 +159,26 @@ void MainComponent::resized()
     // If you add any child components, this is where you should
     // update their positions.
     int areawidth = 200;
-    int margin = 10;
-    int buttonHeight = 30;
     
     Rectangle<int> totArea = getLocalBounds();
     Rectangle<int> buttonArea = totArea.removeFromRight(areawidth);
+
+    totArea.removeFromTop(GUIDefines::margin);
+    totArea.removeFromLeft(GUIDefines::margin);
+    textBox->setBounds(totArea.removeFromTop(GUIDefines::buttonHeight));
     
-    totArea.removeFromTop(margin);
-    totArea.removeFromLeft(margin);
-    textBox->setBounds(totArea.removeFromTop(buttonHeight));
+    buttonArea.removeFromRight(GUIDefines::margin);
+    buttonArea.removeFromLeft(GUIDefines::margin);
+    buttonArea.removeFromTop(GUIDefines::margin);
     
-    buttonArea.removeFromRight(margin);
-    buttonArea.removeFromLeft(margin);
-    buttonArea.removeFromTop(margin);
-    
-    int topButtonWidth = (buttonArea.getWidth() - margin) / 2.0;
-    int buttonWidth = (buttonArea.getWidth() - margin * 2) / 3.0;
+    int topButtonWidth = (buttonArea.getWidth() - GUIDefines::margin) / 2.0;
+    int buttonWidth = (buttonArea.getWidth() - GUIDefines::margin * 2) / 3.0;
     
     Rectangle<int> buttonRow;
-    buttonRow = buttonArea.removeFromTop(buttonHeight);
+    buttonRow = buttonArea.removeFromTop(GUIDefines::buttonHeight);
     
     checkEq->setBounds(buttonRow.removeFromLeft(topButtonWidth));
-    buttonRow.removeFromLeft(margin);
+    buttonRow.removeFromLeft(GUIDefines::margin);
     createPM->setBounds(buttonRow.removeFromLeft(topButtonWidth));
     
     
@@ -177,11 +186,19 @@ void MainComponent::resized()
     {
         if ((i - startOfOperators) % 3 == 0)
         {
-            buttonArea.removeFromTop(margin);
-            buttonRow = buttonArea.removeFromTop(buttonHeight);
+            buttonArea.removeFromTop(GUIDefines::margin);
+            buttonRow = buttonArea.removeFromTop(GUIDefines::buttonHeight);
         }
         buttons[i]->setBounds(buttonRow.removeFromLeft(buttonWidth));
-        buttonRow.removeFromLeft(margin);
+        buttonRow.removeFromLeft(GUIDefines::margin);
+    }
+    
+    buttonArea.removeFromTop(GUIDefines::margin);
+    
+    Rectangle<int> coeffListArea = buttonArea;
+    for (int i = 0; i < coefficients.size(); ++i)
+    {
+        coeffLabels[i]->setBounds (coeffListArea.removeFromTop(GUIDefines::buttonHeight));
     }
     
 }
@@ -194,10 +211,45 @@ void MainComponent::buttonClicked(Button* button)
     }
     else if (button == createPM)
     {
-        fdsSolver->solve (equation);
+        fdsSolver->solve (equation, eq);
         equation = "";
     }
-    
+    else if (button == coeff)
+    {
+        addAndMakeVisible(addCoeffWindow);
+        DialogWindow::LaunchOptions dlg;
+        dlg.dialogTitle = TRANS("Add Coefficient");
+        dlg.content.set(addCoeffWindow, false);
+        if (dlg.runModal() == 0)
+        {
+            String coeffName = addCoeffWindow->getCoeffName();
+            if (coefficients.contains(coeffName))
+            {
+                std::cout << "Coefficient name already exists" << std::endl;
+                return;
+            }
+            double value = addCoeffWindow->getValue();
+            
+            coefficients.set (coeffName, value);
+            String labelString = coeffName + " = " + String(value);
+            Label* label = new Label ();
+            coeffLabels.push_back (label);
+            label->setText (labelString, dontSendNotification);
+            label->setFont (Font("Latin Modern Math", "Italic", 16.0));
+            label->setColour (Label::textColourId, Colours::white);
+            addAndMakeVisible (label);
+            
+            int lim = 3 - coeffName.length();
+            for (int i = 0; i < lim; ++i)
+            {
+                coeffName += "-";
+            }
+            std::cout << coeffName << std::endl;
+            equation = equation + coeffName + "_";
+            resized();
+        }
+        
+    }
     else if (button == backSpace)
     {
         equation = equation.dropLastCharacters (4);
@@ -232,19 +284,27 @@ String MainComponent::decoder (String string)
     
     for (int i = 0; i < tokens.size(); i++)
     {
-        tokens[i]; // holds next token
-        bool flag = true;
-        for (int j = 0; j < stringCode.getStringArraySize(); ++j)
+        String firstChar = tokens[i].substring(0, 1);
+        const char* test = static_cast<const char*> (firstChar.toUTF8());
+        
+        if (!std::isdigit(*test))
         {
-            if (stringCode.encoded[j] == tokens[i])
+            returnString += tokens[i].upToFirstOccurrenceOf ("-", false, true);
+            
+        } else {
+            bool flag = true;
+            for (int j = 0; j < stringCode.getStringArraySize(); ++j)
             {
-                returnString += stringCode.decoded[j];
-                flag = false;
-                break;
+                if (stringCode.encoded[j] == tokens[i])
+                {
+                    returnString += stringCode.decoded[j];
+                    flag = false;
+                    break;
+                }
             }
+            if (flag)
+                returnString += "??";
         }
-        if (flag)
-            returnString += "??";
     }
     
     return returnString;

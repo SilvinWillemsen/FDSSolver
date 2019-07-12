@@ -9,15 +9,17 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "GUIDefines.h"
 #include "FDSsolver.h"
-
+#include "AddCoefficient.h"
 //==============================================================================
 /*
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
 
-class MainComponent   : public AudioAppComponent, public Button::Listener
+class MainComponent   : public AudioAppComponent,
+                        public Button::Listener
 {
 public:
     //==============================================================================
@@ -50,7 +52,7 @@ private:
     ScopedPointer<Equation> eq = nullptr;
     double fs;
     
-    bool debug = true;
+    bool debug = false;
     
     String deltaString;
     OwnedArray<TextButton> buttons;
@@ -73,8 +75,7 @@ private:
     TextButton* deltaBackX = nullptr;
     TextButton* deltaXX = nullptr;
     
-    
-    
+    TextButton* coeff = nullptr;
     TextButton* backSpace = nullptr;
     
     Label* textBox = nullptr;
@@ -82,5 +83,10 @@ private:
     
     String equation;
     StringCode stringCode;
+
+    AddCoefficient* addCoeffWindow;
+    NamedValueSet coefficients;
+    std::vector<Label*> coeffLabels;
+//    DialogWindow dialogWindow;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

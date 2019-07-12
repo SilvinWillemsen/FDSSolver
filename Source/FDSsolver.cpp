@@ -12,41 +12,6 @@
 #include "FDSsolver.h"
 
 //==============================================================================
-Equation::Equation(int max, bool createULN)
-{
-    uNextCoeffs.resize(max);
-    uCoeffs.resize(max);
-    uPrevCoeffs.resize(max);
-    
-    if (createULN)
-    {
-        int idx = (max - 1) / 2.0;
-        uCoeffs[idx] = 1;
-    }
-}
-
-bool Equation::check (int idx)
-{
-    if (uNextCoeffs[idx] != 0 ||
-        uCoeffs[idx] != 0 ||
-        uPrevCoeffs[idx] != 0)
-    {
-        std::cout << "Size of the uCoeffs vector is incorect: " << std::endl;
-        std::cout << "Index " << idx << " should be 0." << std::endl;
-        return false;
-    }
-    return true;
-}
-
-bool Equation::checkOperation (Equation& eq)
-{
-    if (getCoeffsSize() != eq.getCoeffsSize())
-    {
-        std::cout << "Can't perform operation. Equations don't have the same dimensions." << std::endl;
-        return false;
-    }
-    return true;
-}
 
 FDSsolver::FDSsolver(StringCode* stringCode, double k) : stringCode (stringCode), k (k)
 {
@@ -96,11 +61,11 @@ bool FDSsolver::checkEquation(String& equationString)
     {
         return false;
     }
-    
-    
+
+    return true;
 }
 
-void FDSsolver::solve (String& equationString)
+void FDSsolver::solve (String& equationString, Equation* eq)
 {
     StringArray tokens;
     tokens.addTokens (equationString, "_", "\"");
@@ -118,6 +83,7 @@ void FDSsolver::solve (String& equationString)
         }
     }
     
+    int equalsSignIdx = 0;
     bool newTermFlag = false;
     std::vector<Equation> terms;
     terms.reserve(numTerms);
@@ -125,7 +91,7 @@ void FDSsolver::solve (String& equationString)
     std::vector<Equation> coeffs;
     terms.reserve(numTerms);
     
-    terms.push_back(Equation (7, true));
+    terms.push_back(Equation (eq->getCoeffsSize(), true));
     
     int idx = 0;
     Equation* eqPtr = &terms[idx];
@@ -175,23 +141,27 @@ void FDSsolver::solve (String& equationString)
                 }
                 break;
             case 3:
+                if (tokens[i].getIntValue() == 100)
+                {
+                    equalsSignIdx = idx + 1;
+                }
                 newTermFlag = true;
                 break;
             case 4:
                 coeffs[idx];
         }
     }
-    
-    double kappa = -0.001;
-    double c = 100.0;
-    double sigma0 = 1.0;
-    
 
     for (int i = 0; i < terms.size(); ++i)
     {
-        eq = eq + terms[i];
+        if (i < equalsSignIdx)
+            *eq = (*eq) + terms[i];
+        else
+            *eq = (*eq) - terms[i];
     }
-    getEquation();
+    int uNextIdx = (eq->getCoeffsSize() - 1) / 2.0;
+    *eq = (*eq) / (eq->getUNextCoeffs()[uNextIdx]);
+    eq->showStencil();
 }
 
 bool FDSsolver::checkSyntax (StringArray& tokens)
@@ -206,6 +176,7 @@ bool FDSsolver::checkSyntax (StringArray& tokens)
             hasEqualsSign = true;
         }
         String firstChar = tokens[i].substring(0, 1);
+        
         int firstInt = firstChar.getIntValue();
         if (i == tokens.size() && firstInt != 3)
         {
@@ -231,11 +202,14 @@ bool FDSsolver::checkSyntax (StringArray& tokens)
                 break;
         }
         
+        // if the character can't be after the previous one, give an error
         if (std::find(notAllowedCharacters.begin(), notAllowedCharacters.end(), firstChar.getIntValue()) != notAllowedCharacters.end())
         {
             std::cout << "Syntax error" << std::endl;
             return false;
         }
+        
+        // set the type of the previous character
         prevTermType = firstChar.getIntValue();
     }
     if (!hasEqualsSign)
@@ -246,26 +220,12 @@ bool FDSsolver::checkSyntax (StringArray& tokens)
     return true;
 }
 
-int FDSsolver::getEquation()
-{
-    for (int i = 0; i < eq.getCoeffsSize(); ++i)
-        std::cout << eq.getUNextCoeffs()[i] << " ";
-    std::cout << std::endl;
-    
-    for (int i = 0; i < eq.getCoeffsSize(); ++i)
-        std::cout << eq.getUCoeffs()[i] << " ";
-    std::cout << std::endl;
-    
-    for (int i = 0; i < eq.getCoeffsSize(); ++i)
-        std::cout << eq.getUPrevCoeffs()[i] << " ";
-    std::cout << std::endl;
-    return eq.getCoeffsSize();
-}
-
 void FDSsolver::applyOperator(Equation *equation, void (*)(Equation *))
 {
     
 }
+
+// OPERATORS //
 
 Equation* FDSsolver::forwDiffX(Equation* eq)
 {
@@ -381,9 +341,4 @@ Equation* FDSsolver::centDiffT (Equation* eq)
     *eq = (*eq) * (1.0 / (2*k));
     
     return eq;
-}
-
-void FDSsolver::decodeStringToEquation (String equation)
-{
-    
 }

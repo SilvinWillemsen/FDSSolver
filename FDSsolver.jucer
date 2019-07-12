@@ -3,6 +3,13 @@
 <JUCERPROJECT id="yHXHd5" name="FDSsolver" projectType="guiapp" jucerVersion="5.4.1">
   <MAINGROUP id="iOQDaH" name="FDSsolver">
     <GROUP id="{C69A153F-C0F4-07C6-ECD0-F265B52BC998}" name="Source">
+      <FILE id="Okc5f4" name="GUIDefines.h" compile="0" resource="0" file="Source/GUIDefines.h"/>
+      <FILE id="r6nf4q" name="AddCoefficient.cpp" compile="1" resource="0"
+            file="Source/AddCoefficient.cpp"/>
+      <FILE id="igajRE" name="AddCoefficient.h" compile="0" resource="0"
+            file="Source/AddCoefficient.h"/>
+      <FILE id="sBHS6p" name="Equation.cpp" compile="1" resource="0" file="Source/Equation.cpp"/>
+      <FILE id="ooNCwQ" name="Equation.h" compile="0" resource="0" file="Source/Equation.h"/>
       <FILE id="UsaCRX" name="FDSsolver.cpp" compile="1" resource="0" file="Source/FDSsolver.cpp"/>
       <FILE id="mIQaXp" name="FDSsolver.h" compile="0" resource="0" file="Source/FDSsolver.h"/>
       <FILE id="sV00HW" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
