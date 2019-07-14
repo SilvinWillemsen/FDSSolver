@@ -29,14 +29,19 @@ public:
     String getCoeffName() { return coefficientName; };
     double getValue() { return value; };
     
+    bool isDynamic() { return dynamicBool; };
+    void setDynamic (bool val) { dynamicBool = val; dynamic.setToggleState (val, dontSendNotification); };
+    
 private:
     TextEditor coeffTextBox;
     TextEditor valueTextBox;
     Label addCoeffLabel;
     Label valueLabel;
     TextButton addCoeff;
+    ToggleButton dynamic;
     
     String coefficientName;
     double value;
+    bool dynamicBool = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AddCoefficient)
 };

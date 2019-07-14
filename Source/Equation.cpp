@@ -38,7 +38,7 @@ bool Equation::check (int idx)
 
 bool Equation::checkOperation (Equation& eq)
 {
-    if (getCoeffsSize() != eq.getCoeffsSize())
+    if (getStencilWidth() != eq.getStencilWidth())
     {
         std::cout << "Can't perform operation. Equations don't have the same dimensions." << std::endl;
         return false;
@@ -48,15 +48,15 @@ bool Equation::checkOperation (Equation& eq)
 
 void Equation::showStencil()
 {
-    for (int i = 0; i < getCoeffsSize(); ++i)
+    for (int i = 0; i < getStencilWidth(); ++i)
         std::cout << uNextCoeffs[i] << " ";
     std::cout << std::endl;
     
-    for (int i = 0; i < getCoeffsSize(); ++i)
+    for (int i = 0; i < getStencilWidth(); ++i)
         std::cout << uCoeffs[i] << " ";
     std::cout << std::endl;
     
-    for (int i = 0; i < getCoeffsSize(); ++i)
+    for (int i = 0; i < getStencilWidth(); ++i)
         std::cout << uPrevCoeffs[i] << " ";
     std::cout << std::endl;
 }

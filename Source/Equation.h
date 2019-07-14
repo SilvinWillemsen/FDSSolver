@@ -25,20 +25,26 @@ public:
         "203",
         "204",
         "205",
-        "301"
+        "206",
+        "207",
+        "300",
+        "901"
     };
     
     const StringArray decoded = {
         " = ",
         " + ",
-        " - ",
+        " " + String(CharPointer_UTF8 ("\xe2\x80\x93")) + " ",
         String(CharPointer_UTF8 ("\xce\xb4")) + "t+",
         String(CharPointer_UTF8 ("\xce\xb4")) + "t-",
+        String(CharPointer_UTF8 ("\xce\xb4")) + "t" + String (CharPointer_UTF8 ("\xc2\xb7")),
         String(CharPointer_UTF8 ("\xce\xb4")) + "tt",
         String(CharPointer_UTF8 ("\xce\xb4")) + "x+",
         String(CharPointer_UTF8 ("\xce\xb4")) + "x-",
+        String(CharPointer_UTF8 ("\xce\xb4")) + "x" + String (CharPointer_UTF8 ("\xc2\xb7")),
         String(CharPointer_UTF8 ("\xce\xb4")) + "xx",
-        "u"
+        "u",
+        "-"
     };
     
     
@@ -116,13 +122,15 @@ public:
     
     bool checkOperation (Equation& eq);
     
-    int getCoeffsSize() { return static_cast<int> (uCoeffs.size()); };
+//    int getCoeffsSize() { return static_cast<int> (uCoeffs.size()); };
     
     double* getUNextCoeffs() { return &uNextCoeffs[0]; };
     double* getUCoeffs() { return &uCoeffs[0]; };
     double* getUPrevCoeffs() { return &uPrevCoeffs[0]; };
     
     void showStencil();
+    
+    int getStencilWidth() { return static_cast<int> (uCoeffs.size()); };
 private:
     std::vector<double> uNextCoeffs;
     std::vector<double> uCoeffs;

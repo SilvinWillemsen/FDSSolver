@@ -11,6 +11,7 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "GUIDefines.h"
 #include "Equation.h"
 
 //==============================================================================
@@ -29,7 +30,7 @@ public:
     bool checkEquation (String& equation);
     bool checkSyntax (StringArray& tokens);
     
-    void solve (String& equationString, Equation* eq);
+    bool solve (String& equationString, Equation* eq);
     
     // Spatial differences
     Equation* forwDiffX (Equation* equation);
@@ -47,6 +48,12 @@ public:
     
     void applyOperator (Equation* equation, void(*)(Equation*));
     
+    bool checkAllowedCharacters (int prevTermType, StringArray& tokens, bool& hasEqualsSign);
+    
+    int getStencilWidth (String& equationString);
+    
+    void setCoeffValues (NamedValueSet* values) { coeffValues = values; };
+    
 private:
     StringCode* stringCode;
     Equation eq;
@@ -55,6 +62,9 @@ private:
     
     double h;
     double k;
+    
+    int stencilSize;
 
+    NamedValueSet* coeffValues;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FDSsolver)
 };

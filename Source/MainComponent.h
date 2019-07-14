@@ -19,7 +19,8 @@
 */
 
 class MainComponent   : public AudioAppComponent,
-                        public Button::Listener
+                        public Button::Listener,
+                        public Slider::Listener
 {
 public:
     //==============================================================================
@@ -36,8 +37,9 @@ public:
     void resized() override;
 
     void buttonClicked (Button* button) override;
+    void sliderValueChanged (Slider* slider) override;
     
-    void refreshLabel();
+    void refresh();
     
     // Use for one character
     String encoder (String equation);
@@ -52,15 +54,14 @@ private:
     ScopedPointer<Equation> eq = nullptr;
     double fs;
     
-    bool debug = false;
-    
     String deltaString;
     OwnedArray<TextButton> buttons;
     OwnedArray<TextButton> coeffButtons;
+    OwnedArray<Slider> coeffSliders;
     OwnedArray<Label> labels;
     
     TextButton* createPM = nullptr;
-    TextButton* checkEq = nullptr;
+    TextButton* clearEq = nullptr;
     
     int startOfOperators;
     
@@ -76,6 +77,8 @@ private:
     TextButton* deltaBackX = nullptr;
     TextButton* deltaXX = nullptr;
     
+    TextButton* minusSign = nullptr;
+    
     TextButton* coeff = nullptr;
     TextButton* backSpace = nullptr;
     
@@ -87,7 +90,9 @@ private:
 
     AddCoefficient* addCoeffWindow;
     NamedValueSet coefficients;
-    std::vector<Label*> coeffLabels;
-//    DialogWindow dialogWindow;
+    
+    ScopedPointer<Label> coeffTopLabel;
+    OwnedArray<Label> coeffLabels;
+    std::vector<bool> coeffDynamic;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

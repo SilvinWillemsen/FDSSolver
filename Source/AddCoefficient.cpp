@@ -27,12 +27,20 @@ AddCoefficient::AddCoefficient()
     addAndMakeVisible (valueLabel);
 
     coeffTextBox.setInputRestrictions (3, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-    valueTextBox.setInputRestrictions (0, "0123456789.");
+    valueTextBox.setInputRestrictions (0, "0123456789.eE");
     
     addCoeff.setButtonText ("Add Coefficient");
     addAndMakeVisible (addCoeff);
     addCoeff.addListener (this);
-    setSize (300, 10);
+    
+    dynamic.setButtonText ("Dynamic");
+    dynamic.setColour (ToggleButton::textColourId, Colours::black);
+    dynamic.setColour (ToggleButton::tickColourId, Colours::black);
+    dynamic.setColour (ToggleButton::tickDisabledColourId, Colours::black);
+    addAndMakeVisible (dynamic);
+    dynamic.addListener (this);
+    
+    setSize (500, 10);
 }
 
 AddCoefficient::~AddCoefficient()
@@ -57,42 +65,51 @@ void AddCoefficient::resized()
     labelArea.removeFromTop (labelArea.getHeight() - GUIDefines::buttonHeight);
     int labelStartMargin = 5;
     labelArea.removeFromLeft (GUIDefines::margin - labelStartMargin);
-    int totalBoxWidth = labelArea.getWidth() - GUIDefines::margin * 2;
+    int totalBoxWidth = labelArea.getWidth() - GUIDefines::margin * 3;
     
-    addCoeffLabel.setBounds (labelArea.removeFromLeft (0.5 * totalBoxWidth));
+    addCoeffLabel.setBounds (labelArea.removeFromLeft (0.3 * totalBoxWidth));
     labelArea.removeFromLeft (GUIDefines::margin);
-    valueLabel.setBounds (labelArea.removeFromLeft (0.25 * totalBoxWidth));
+    valueLabel.setBounds (labelArea.removeFromLeft (0.2 * totalBoxWidth));
     
     Rectangle<int> drawArea (0, getHeight() / 2.0 - GUIDefines::buttonHeight / 2.0, getWidth(), GUIDefines::buttonHeight);
     drawArea.removeFromLeft (GUIDefines::margin);
     drawArea.removeFromRight (GUIDefines::margin);
     
-    coeffTextBox.setBounds (drawArea.removeFromLeft (0.5 * totalBoxWidth));
+    coeffTextBox.setBounds (drawArea.removeFromLeft (0.3 * totalBoxWidth));
     drawArea.removeFromLeft (GUIDefines::margin);
-    valueTextBox.setBounds (drawArea.removeFromLeft (0.25 * totalBoxWidth));
+    valueTextBox.setBounds (drawArea.removeFromLeft (0.2 * totalBoxWidth));
+    drawArea.removeFromLeft (GUIDefines::margin);
+    dynamic.setBounds (drawArea.removeFromLeft (0.2 * totalBoxWidth));
     drawArea.removeFromLeft (GUIDefines::margin);
     addCoeff.setBounds (drawArea);
 }
 
 void AddCoefficient::buttonClicked (Button* button)
 {
-    if (coeffTextBox.isEmpty())
+    if (button == &addCoeff)
     {
-        std::cout << "No coefficient given" << std::endl;
+        DialogWindow* dw = this->findParentComponentOfClass<DialogWindow>();
+        if (coeffTextBox.isEmpty())
+        {
+            std::cout << "No coefficient given" << std::endl;
+            dw->exitModalState (2);
+        }
+        else if (valueTextBox.isEmpty())
+        {
+            std::cout << "No value given" << std::endl;
+            dw->exitModalState (3);
+        }
+        
+        coefficientName = coeffTextBox.getText();
+        value = valueTextBox.getText().getDoubleValue();
+        
+        coeffTextBox.setText("");
+        valueTextBox.setText("");
+        dw->exitModalState (1);
     }
-    else if (valueTextBox.isEmpty())
+    else if (button == &dynamic)
     {
-        std::cout << "No value given" << std::endl;
+        dynamicBool = !dynamicBool;
+        valueLabel.setText (dynamicBool ? "Max value" : "Value", dontSendNotification);
     }
-    
-    coefficientName = coeffTextBox.getText();
-    value = valueTextBox.getText().getDoubleValue();
-//    std::cout << coefficientName << std::endl;
-    
-    coeffTextBox.setText("");
-    valueTextBox.setText("");
-    
-    if (DialogWindow* dw = this->findParentComponentOfClass<DialogWindow>())
-        dw->exitModalState (0);
-    
 }
