@@ -12,6 +12,8 @@
 #include "GUIDefines.h"
 #include "FDSsolver.h"
 #include "AddCoefficient.h"
+#include "Object1D.h"
+
 //==============================================================================
 /*
     This component lives inside our window, and this is where you should put all
@@ -20,7 +22,9 @@
 
 class MainComponent   : public AudioAppComponent,
                         public Button::Listener,
-                        public Slider::Listener
+                        public Slider::Listener,
+                        public Timer,
+                        public KeyListener
 {
 public:
     //==============================================================================
@@ -47,13 +51,18 @@ public:
     // Use for multiple characters
     String decoder (String equation);
     
+    void timerCallback() override;
+    double clip (double output, double min = -1.0, double max = 1.0);
+    
+    bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
+    
 private:
     //==============================================================================
     // Your private member variables go here...
     ScopedPointer<FDSsolver> fdsSolver = nullptr;
     ScopedPointer<Equation> eq = nullptr;
     double fs;
-    
+    int bufferSize;
     String deltaString;
     OwnedArray<TextButton> buttons;
     OwnedArray<TextButton> coeffButtons;
@@ -71,10 +80,12 @@ private:
     
     TextButton* deltaForwT = nullptr;
     TextButton* deltaBackT = nullptr;
+    TextButton* deltaCentT = nullptr;
     TextButton* deltaTT = nullptr;
     
     TextButton* deltaForwX = nullptr;
     TextButton* deltaBackX = nullptr;
+    TextButton* deltaCentX = nullptr;
     TextButton* deltaXX = nullptr;
     
     TextButton* minusSign = nullptr;
@@ -88,11 +99,13 @@ private:
     String equation;
     StringCode stringCode;
 
-    AddCoefficient* addCoeffWindow;
+    ScopedPointer<AddCoefficient> addCoeffWindow;
     NamedValueSet coefficients;
     
     ScopedPointer<Label> coeffTopLabel;
     OwnedArray<Label> coeffLabels;
     std::vector<bool> coeffDynamic;
+
+    OwnedArray<Object1D> objects;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

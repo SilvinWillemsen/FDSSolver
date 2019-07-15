@@ -27,7 +27,7 @@ AddCoefficient::AddCoefficient()
     addAndMakeVisible (valueLabel);
 
     coeffTextBox.setInputRestrictions (3, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-    valueTextBox.setInputRestrictions (0, "0123456789.eE");
+    valueTextBox.setInputRestrictions (0, "0123456789.eE-");
     
     addCoeff.setButtonText ("Add Coefficient");
     addAndMakeVisible (addCoeff);
@@ -39,6 +39,12 @@ AddCoefficient::AddCoefficient()
     dynamic.setColour (ToggleButton::tickDisabledColourId, Colours::black);
     addAndMakeVisible (dynamic);
     dynamic.addListener (this);
+    
+    coeffTextBox.setEscapeAndReturnKeysConsumed (false);
+    valueTextBox.setEscapeAndReturnKeysConsumed (false);
+    
+    coeffTextBox.addListener (this);
+    valueTextBox.addListener (this);
     
     setSize (500, 10);
 }
@@ -55,6 +61,11 @@ void AddCoefficient::paint (Graphics& g)
        You should replace everything in this method with your own
        drawing code..
     */
+    if (initKeyboardFocus)
+    {
+        getCoeffTextBoxPtr()->grabKeyboardFocus();
+        initKeyboardFocus = false;
+    }
 }
 
 void AddCoefficient::resized()
@@ -82,6 +93,7 @@ void AddCoefficient::resized()
     dynamic.setBounds (drawArea.removeFromLeft (0.2 * totalBoxWidth));
     drawArea.removeFromLeft (GUIDefines::margin);
     addCoeff.setBounds (drawArea);
+
 }
 
 void AddCoefficient::buttonClicked (Button* button)
@@ -99,6 +111,11 @@ void AddCoefficient::buttonClicked (Button* button)
             std::cout << "No value given" << std::endl;
             dw->exitModalState (3);
         }
+        else if (valueTextBox.getText().getDoubleValue() < 0)
+        {
+            std::cout << "No negative coefficients" << std::endl;
+            dw->exitModalState (4);
+        }
         
         coefficientName = coeffTextBox.getText();
         value = valueTextBox.getText().getDoubleValue();
@@ -109,7 +126,13 @@ void AddCoefficient::buttonClicked (Button* button)
     }
     else if (button == &dynamic)
     {
+        coeffTextBox.focusGained (focusChangedDirectly);
         dynamicBool = !dynamicBool;
         valueLabel.setText (dynamicBool ? "Max value" : "Value", dontSendNotification);
     }
+}
+
+void AddCoefficient::textEditorReturnKeyPressed (TextEditor& textBox)
+{
+    buttonClicked (&addCoeff);
 }

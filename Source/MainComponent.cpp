@@ -51,8 +51,8 @@ MainComponent::MainComponent()
     deltaBackT->setButtonText(deltaString + "t-");
     
     buttons.add (new TextButton("202"));
-    deltaBackT = buttons[buttons.size() - 1];
-    deltaBackT->setButtonText(deltaString + "t" + String (CharPointer_UTF8 ("\xc2\xb7")));
+    deltaCentT = buttons[buttons.size() - 1];
+    deltaCentT->setButtonText(deltaString + "t" + String (CharPointer_UTF8 ("\xc2\xb7")));
     
     buttons.add (new TextButton("203"));
     deltaTT = buttons[buttons.size() - 1];
@@ -67,8 +67,8 @@ MainComponent::MainComponent()
     deltaBackX->setButtonText(deltaString + "x-");
     
     buttons.add (new TextButton("206"));
-    deltaBackX = buttons[buttons.size() - 1];
-    deltaBackX->setButtonText(deltaString + "x" + String (CharPointer_UTF8 ("\xc2\xb7")));
+    deltaCentX = buttons[buttons.size() - 1];
+    deltaCentX->setButtonText(deltaString + "x" + String (CharPointer_UTF8 ("\xc2\xb7")));
     
     buttons.add (new TextButton("207"));
     deltaXX = buttons[buttons.size() - 1];
@@ -108,7 +108,8 @@ MainComponent::MainComponent()
     coeffTopLabel->setText ("Coefficients", dontSendNotification);
     coeffTopLabel->setFont (Font (16.0f));
     addAndMakeVisible (coeffTopLabel);
-    
+
+    addKeyListener (this);
     setSize (800, 600);
     
     // specify the number of input and output channels that we want to open
@@ -118,6 +119,7 @@ MainComponent::MainComponent()
 MainComponent::~MainComponent()
 {
     // This shuts down the audio device and clears the audio source.
+    Timer::stopTimer();
     shutdownAudio();
 }
 
@@ -132,8 +134,9 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
 
     // For more details, see the help for AudioProcessor::prepareToPlay()
     fs = sampleRate;
+    bufferSize = samplesPerBlockExpected;
     fdsSolver = new FDSsolver (&stringCode, GUIDefines::debug ? 1.0 : 1.0 / fs);// / fs);
-    fdsSolver->setGridSpacing (GUIDefines::debug ? 1.0 : (1.0 / 80.0));
+    Timer::startTimerHz (120);
     refresh();
 }
 
@@ -141,6 +144,25 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
 {
     bufferToFill.clearActiveBufferRegion();
     
+    float *const channelData1 = bufferToFill.buffer->getWritePointer(0, bufferToFill.startSample);
+    float *const channelData2 = bufferToFill.buffer->getWritePointer(1, bufferToFill.startSample);
+    
+    //    float output{0.0, 0.0};
+    for (int i = 0; i < bufferSize; ++i)
+    {
+        float output = 0.0;
+        for (auto object : objects)
+        {
+            object->excite();
+            object->calculateFDS();
+            output = output + object->getOutput (0.5);
+            object->updateStates();
+        }
+        channelData1[i] = clip(output);
+        channelData2[i] = clip(output);
+//        std::cout << output << std::endl;
+        //        std::cout <<"Buffer sample " << i << ": " <<  output << std::endl;
+    }
     // for all objects, run their schemes
 }
 
@@ -174,6 +196,13 @@ void MainComponent::resized()
     totArea.removeFromTop(GUIDefines::margin);
     totArea.removeFromLeft(GUIDefines::margin);
     textBox->setBounds(totArea.removeFromTop(GUIDefines::buttonHeight));
+    totArea.removeFromTop (GUIDefines::margin);
+    
+    // draw objects
+    for (int i = 0; i < objects.size(); ++i)
+    {
+        objects[i]->setBounds(totArea.removeFromTop(100));
+    }
     
     buttonArea.removeFromRight(GUIDefines::margin);
     buttonArea.removeFromLeft(GUIDefines::margin);
@@ -228,7 +257,7 @@ void MainComponent::resized()
         }
         buttonArea.removeFromTop(GUIDefines::margin);
     }
-    
+
 }
 
 void MainComponent::buttonClicked (Button* button)
@@ -252,14 +281,23 @@ void MainComponent::buttonClicked (Button* button)
         if (fdsSolver->solve (equation, eq))
         {
 //            equation = "";
+            objects.add (new Object1D (fdsSolver->getStencil (eq), eq->getNumPoints()));
+            Object1D* newObject = objects[objects.size() - 1];
+            newObject->setCoefficientTermIndex (fdsSolver->getCoeffTermIndex());
+            newObject->refreshCoefficients();
+            addAndMakeVisible (newObject);
+            std::cout << eq->getNumPoints() << std::endl;
         }
+        resized();
     }
     else if (button == coeff)
     {
-        addAndMakeVisible(addCoeffWindow);
+        addAndMakeVisible (addCoeffWindow);
         DialogWindow::LaunchOptions dlg;
         dlg.dialogTitle = TRANS("Add Coefficient");
         dlg.content.set (addCoeffWindow, false);
+        addCoeffWindow->setKeyboardFocus (true);
+        
         if (dlg.runModal() == 1)
         {
             String coeffName = addCoeffWindow->getCoeffName();
@@ -271,7 +309,6 @@ void MainComponent::buttonClicked (Button* button)
             double value = addCoeffWindow->getValue();
             
             coefficients.set (coeffName, value);
-            
             coeffButtons.add (new TextButton(coeffName));
             coeffButtons[coeffButtons.size() - 1]->setButtonText (coeffName);
             coeffButtons[coeffButtons.size() - 1]->addListener(this);
@@ -331,8 +368,14 @@ void MainComponent::buttonClicked (Button* button)
 void MainComponent::sliderValueChanged (Slider* slider)
 {
     coefficients.set (slider->getName(), slider->getValue());
-    std::cout << coefficients.getName(0).toString() << slider->getName() <<  std::endl;
-    std::cout << static_cast<double> (*coefficients.getVarPointer (slider->getName())) << std::endl;
+    for (auto object : objects)
+    {
+        if (object->getCoefficientPtr()->contains (slider->getName()))
+        {
+            object->getCoefficientPtr()->set (slider->getName(), slider->getValue());
+            object->refreshCoefficients();
+        }
+    }
 }
 
 String MainComponent::encoder (String string)
@@ -464,4 +507,93 @@ void MainComponent::refresh()
             coeffButton->setEnabled (true);
     
     textBox->setText(decoder(equation), dontSendNotification);
+}
+
+void MainComponent::timerCallback()
+{
+    for (int i = 0; i < objects.size(); ++i)
+        objects[i]->repaint();
+}
+
+double MainComponent::clip (double output, double min, double max)
+{
+    if (output > max)
+    {
+        return output = max;
+    }
+    else if (output < min)
+    {
+        return output = min;
+    }
+    return output;
+}
+
+bool MainComponent::keyPressed (const KeyPress& key, Component* originatingComponent)
+{
+    TextButton* buttonToClick = nullptr;
+    
+    if (!(ModifierKeys::getCurrentModifiers() == ModifierKeys::shiftModifier))
+    {
+        switch (key.getTextCharacter())
+        {
+            case 12:
+                buttonToClick = createPM;
+                break;
+            case '=':
+                buttonToClick = equals;
+                break;
+            case '+':
+                buttonToClick = plus;
+                break;
+            case '-':
+                buttonToClick = minus;
+                break;
+            case 'g':
+                buttonToClick = deltaForwT;
+                break;
+            case 'h':
+                buttonToClick = deltaBackT;
+                break;
+            case 'j':
+                buttonToClick = deltaCentT;
+                break;
+            case 'k':
+                buttonToClick = deltaTT;
+                break;
+            case 'v':
+                buttonToClick = deltaForwX;
+                break;
+            case 'b':
+                buttonToClick = deltaBackX;
+                break;
+            case 'n':
+                buttonToClick = deltaCentX;
+                break;
+            case 'm':
+                buttonToClick = deltaXX;
+                break;
+            case 'u':
+                buttonToClick = uLN;
+                break;
+            case 127:
+                buttonToClick = backSpace;
+                break;
+            default:
+                buttonToClick = nullptr;
+                break;
+        }
+        
+        if (buttonToClick != nullptr && buttonToClick->isEnabled())
+            buttonClicked (buttonToClick);
+    }
+    else
+    {
+        key.getTextDescription();
+        String keyString;
+        keyString += (juce_wchar) key.getKeyCode();
+        
+        addCoeffWindow->setCoeffName (keyString);
+        buttonClicked (coeff);
+    }
+    return true;
 }

@@ -4,6 +4,8 @@
   <MAINGROUP id="iOQDaH" name="FDSsolver">
     <GROUP id="{C69A153F-C0F4-07C6-ECD0-F265B52BC998}" name="Source">
       <FILE id="Okc5f4" name="GUIDefines.h" compile="0" resource="0" file="Source/GUIDefines.h"/>
+      <FILE id="hOhWuo" name="Object1D.cpp" compile="1" resource="0" file="Source/Object1D.cpp"/>
+      <FILE id="Eeiiw2" name="Object1D.h" compile="0" resource="0" file="Source/Object1D.h"/>
       <FILE id="r6nf4q" name="AddCoefficient.cpp" compile="1" resource="0"
             file="Source/AddCoefficient.cpp"/>
       <FILE id="igajRE" name="AddCoefficient.h" compile="0" resource="0"

@@ -50,15 +50,25 @@ public:
     
     bool checkAllowedCharacters (int prevTermType, StringArray& tokens, bool& hasEqualsSign);
     
+    std::vector<std::vector<double>> getStencil (Equation* eq);
     int getStencilWidth (String& equationString);
     
     void setCoeffValues (NamedValueSet* values) { coeffValues = values; };
     
+    std::vector<Equation> getTerms() { return terms; };
+    Array<var>& getCoeffTermIndex() { return coefficientTermIndex; };
+    
 private:
     StringCode* stringCode;
-    Equation eq;
+    Equation solvedEquation;
     
     int numTerms = 0;
+    std::vector<Equation> terms;
+    std::vector<double> coeffsPerTerm;
+    NamedValueSet coefficients;
+    
+    // every index in the vector is a term to which coefficients (stored in the StringArray) are applied to
+    Array<var> coefficientTermIndex;
     
     double h;
     double k;

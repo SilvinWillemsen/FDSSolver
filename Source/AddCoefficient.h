@@ -15,7 +15,9 @@
 //==============================================================================
 /*
 */
-class AddCoefficient    : public Component, public Button::Listener
+class AddCoefficient    : public Component,
+                          public Button::Listener,
+                          public TextEditor::Listener
 {
 public:
     AddCoefficient();
@@ -32,6 +34,13 @@ public:
     bool isDynamic() { return dynamicBool; };
     void setDynamic (bool val) { dynamicBool = val; dynamic.setToggleState (val, dontSendNotification); };
     
+    void setCoeffName (String name) { coeffTextBox.setText(name); };
+    TextEditor* getCoeffTextBoxPtr() { return &coeffTextBox; };
+    
+    void setKeyboardFocus (bool val) { initKeyboardFocus = true; };
+
+    void textEditorReturnKeyPressed (TextEditor& textBox) override;
+    
 private:
     TextEditor coeffTextBox;
     TextEditor valueTextBox;
@@ -43,5 +52,6 @@ private:
     String coefficientName;
     double value;
     bool dynamicBool = false;
+    bool initKeyboardFocus = true;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AddCoefficient)
 };

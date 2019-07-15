@@ -16,6 +16,6 @@ class GUIDefines
 public:
     static const int margin = 10;
     static const int buttonHeight = 30;
-    static const bool debug = true;
+    static const bool debug = false;
 //    constexpr static const char fontName[18] = "Latin Modern Math";
 };

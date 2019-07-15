@@ -71,16 +71,18 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
     tokens.addTokens (equationString, "_", "\"");
     tokens.remove (tokens.size() - 1);
     
+    // check syntax
     if (!checkSyntax (tokens))
         return false;
     
-    int numTerms = 0;
+    // calculate number of terms
+    int numTerms = 1;
     for (int i = 0; i < tokens.size(); ++i)
     {
         String firstChar = tokens[i].substring(0, 1);
         int firstInt = firstChar.getIntValue();
         
-        if (firstInt == 3)
+        if (firstInt == 1)
         {
             ++numTerms;
         }
@@ -88,10 +90,21 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
     
     int equalsSignIdx = 0;
     bool newTermFlag = false;
-    std::vector<Equation> terms;
+    
     terms.reserve(numTerms);
     
-    std::vector<double> coeffsPerTerm (numTerms, 1);
+    std::vector<double> tmpCoeffsPerTerm (numTerms, 1);
+    coeffsPerTerm = tmpCoeffsPerTerm;
+    
+    // fill the coefficients with 1's
+    Array<var> tmpArray;
+    tmpArray.add (1);
+    
+    //clear the coefficientTermIndex and initialise with 1's
+    coefficientTermIndex.clear();
+    for (int i = 0; i < numTerms; ++i)
+        coefficientTermIndex.add (tmpArray);
+    
     std::vector<int> operatorVect (numTerms - 1, 0);
     
     terms.push_back(Equation (eq->getStencilWidth(), true));
@@ -99,9 +112,9 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
     int idx = 0;
     Equation* eqPtr = &terms[idx];
     
-    // number to keep track of what coefficient we're at
-    int coeffIdx = 0;
-    
+    h = sqrt(static_cast<double>(coeffValues->getValueAt(0))) * k;
+    eq->setNumPoints (h);
+    h = 1.0 / (static_cast<double> (eq->getNumPoints()));
     for (int i = 0; i < tokens.size(); ++i)
     {
         String firstChar = tokens[i].substring(0, 1);
@@ -162,16 +175,32 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
                 newTermFlag = true;
                 break;
             case 9:
+                
                 if (tokens[i].getIntValue() == 901)
                 {
+                    coefficientTermIndex[idx][0] = -1;
                     coeffsPerTerm[idx] *= -1.0;
                 } else {
+                    if (static_cast<int> (coefficientTermIndex[idx][0]) == 1)
+                        coefficientTermIndex[idx][0] = tokens[i].upToFirstOccurrenceOf ("-", false, true);
+                    else
+                        coefficientTermIndex[idx].append (tokens[i].upToFirstOccurrenceOf ("-", false, true));
+                    
                     auto valuePtr =  coeffValues->getVarPointer (tokens[i].upToFirstOccurrenceOf ("-", false, true));
                     coeffsPerTerm[idx] *= static_cast<double> (*valuePtr);
                 }
         }
     }
-
+    
+    for (int i = 0; i < coefficientTermIndex.size(); ++i)
+    {
+        for (int j = 0; j < coefficientTermIndex[i].size(); ++j)
+        {
+            String typeString = coefficientTermIndex[i][j].isInt() ? "integer" : "String";
+            std::cout << "Entry is " << typeString << ". Value = " << coefficientTermIndex[i][j].toString() << std::endl;
+        }
+    }
+    
     for (int i = 0; i < terms.size(); ++i)
     {
         int operatorMult = 1;
@@ -190,6 +219,7 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
             *eq = (*eq) - term;
         }
     }
+    
     int uNextIdx = (eq->getStencilWidth() - 1) / 2.0;
     
     if (eq->getUNextCoeffs()[uNextIdx] == 0)
@@ -201,6 +231,7 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
     if (!GUIDefines::debug)
         *eq = (*eq) / (eq->getUNextCoeffs()[uNextIdx]);
     eq->showStencil();
+    solvedEquation = *eq;
     return true;
 }
 
@@ -285,12 +316,12 @@ void FDSsolver::applyOperator(Equation *equation, void (*)(Equation *))
 
 Equation* FDSsolver::forwDiffX(Equation* eq)
 {
-    bool res = eq->check (eq->getStencilWidth() - 1);
-    if (!res)
-    {
-        return eq;
-    }
-        
+//    bool res = eq->check (eq->getStencilWidth() - 1);
+//    if (!res)
+//    {
+//        return eq;
+//    }
+    
     for (int i = eq->getStencilWidth() - 2; i >= 0; --i)
     {
         eq->getUNextCoeffs()[i + 1] = eq->getUNextCoeffs()[i] - eq->getUNextCoeffs()[i + 1];
@@ -303,12 +334,12 @@ Equation* FDSsolver::forwDiffX(Equation* eq)
 
 Equation* FDSsolver::backDiffX(Equation* eq)
 {
-    bool res = eq->check(0);
-    if (!res)
-    {
-        return eq;
-    }
-    
+//    bool res = eq->check(0);
+//    if (!res)
+//    {
+//        return eq;
+//    }
+//
     for (int i = 1; i < eq->getStencilWidth(); ++i)
     {
         eq->getUNextCoeffs()[i - 1] -= eq->getUNextCoeffs()[i];
@@ -322,14 +353,14 @@ Equation* FDSsolver::backDiffX(Equation* eq)
 
 Equation* FDSsolver::centDiffX (Equation* eq)
 {
-    bool res = eq->check(0);
-    if (res)
-        res = eq->check(eq->getStencilWidth() - 1);
-    
-    if (!res)
-    {
-        return eq;
-    }
+//    bool res = eq->check(0);
+//    if (res)
+//        res = eq->check(eq->getStencilWidth() - 1);
+//
+//    if (!res)
+//    {
+//        return eq;
+//    }
     
     std::vector<double> tmpUNext (eq->getStencilWidth(), 0);
     std::vector<double> tmpU (eq->getStencilWidth(), 0);
@@ -401,6 +432,19 @@ Equation* FDSsolver::centDiffT (Equation* eq)
     
     return eq;
 }
+
+std::vector<std::vector<double>> FDSsolver::getStencil (Equation* eq)
+{
+    std::vector<std::vector<double>> stencil (3, std::vector<double> (eq->getStencilWidth(), 0));
+    
+    for (int i = 0; i < eq->getStencilWidth(); ++i)
+    {
+        stencil[0][i] = eq->getUNextCoeffs()[i];
+        stencil[1][i] = eq->getUCoeffs()[i];
+        stencil[2][i] = eq->getUPrevCoeffs()[i];
+    }
+    return stencil;
+};
 
 int FDSsolver::getStencilWidth (String& equationString)
 {
