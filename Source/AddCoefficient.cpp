@@ -66,10 +66,15 @@ void AddCoefficient::paint (Graphics& g)
     if (initKeyboardFocus)
     {
         if (whichTextBox == 0)
+        {
+            coeffTextBox.setEnabled (true);
+            addCoeff.setButtonText ("Add Coefficient");
             coeffTextBox.grabKeyboardFocus();
+        }
         else
         {
             coeffTextBox.setEnabled (false);
+            addCoeff.setButtonText ("Edit Coefficient");
             valueTextBox.grabKeyboardFocus();
         }
         initKeyboardFocus = false;

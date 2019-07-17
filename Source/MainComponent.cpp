@@ -357,7 +357,7 @@ void MainComponent::buttonClicked (Button* button)
     {
         addAndMakeVisible (addCoeffWindow);
         DialogWindow::LaunchOptions dlg;
-        dlg.dialogTitle = TRANS("Add Coefficient");
+        dlg.dialogTitle = TRANS(coeffPopupState == normalCoeffState ? "Add Coefficient" : "Edit Coefficient");
         dlg.content.set (addCoeffWindow, false);
         addCoeffWindow->setKeyboardFocus (true, coeffPopupState == normalCoeffState ? 0 : 1);
         
@@ -379,130 +379,18 @@ void MainComponent::buttonClicked (Button* button)
             }
             
             coefficients.set (coeffName, value);
-//            int coeffIndex = -1;
-//
-//            // Where to insert the slider / label
-//            int sliderIdx = 0;
-//            int labelIdx = 0;
-//
-//            // if the coefficient already exists
-//            if (coefficients.contains (coeffName))
-//            {
-//                coeffIndex = coefficients.indexOf (coeffName);
-//                for (auto coeffSlider : coeffSliders)
-//                {
-//                    if (coeffSlider->getName() == coeffName)
-//                    {
-//                        // if the coefficient is made static find where to insert the label
-//                        if (!addCoeffWindow->isDynamic())
-//                        {
-//                            if (!coeffLabels.isEmpty())
-//                                for (int i = 0; i < coeffIndex; ++i)
-//                                    for (int j = 0; j < coeffLabels.size(); ++j)
-//                                        if (coefficients.getName(i).toString() == coeffLabels[j]->getName()) // if coeffLabels contains a label called *coeffName* increase the labelIdx
-//                                            ++labelIdx;
-//                            coeffSliders.remove (coeffSliders.indexOf (coeffSlider));
-//                            break;
-//                        }
-//                        coeffSlider->setRange (0.0, value);
-//                        coeffSlider->setValue (value);
-//                        coefficients.set (coeffName, value);
-//                        return;
-//                    }
-//                }
-//
-//                for (auto coeffLabel : coeffLabels)
-//                {
-//                    if (coeffLabel->getName() == coeffName)
-//                    {
-//                        // if the coefficient is made dynamic find where to insert the slider
-//                        if (addCoeffWindow->isDynamic())
-//                        {
-//                            if (!coeffSliders.isEmpty())
-//                                for (int i = 0; i < coeffIndex; ++i)
-//                                    for (int j = 0; j < coeffSliders.size(); ++j) // if coeffSliders contains a slider called *coeffName*
-//                                        if (coefficients.getName(i).toString() == coeffSliders[j]->getName())
-//                                            ++sliderIdx;
-//                            coeffLabels.remove (coeffLabels.indexOf (coeffLabel));
-//                            break;
-//                        }
-//                        coeffLabel->setText (" = " + String(value), dontSendNotification);
-//                        coefficients.set (coeffName, value);
-//                        return;
-//                    }
-//                }
-//
-//            }
-//
-//            // set the coefficient value
-//            coefficients.set (coeffName, value);
-//
-//            // if the coefficient doesn't exist yet
-//            if (coeffIndex == -1)
-//            {
-//                coeffButtons.add (new TextButton (coeffName));
-//                coeffButtons[coeffButtons.size() - 1]->setButtonText (coeffName);
-//                coeffButtons[coeffButtons.size() - 1]->addListener(this);
-//                addAndMakeVisible (coeffButtons[coeffButtons.size() - 1]);
-//            }
-//
-//            // if the coefficient is made dynamic...
-//            if (addCoeffWindow->isDynamic())
-//            {
-//                //create a slider
-//                if (coeffIndex == -1)
-//                {
-//                    coeffSliders.add (new Slider (Slider::LinearHorizontal, Slider::TextBoxLeft));
-//                    sliderIdx = coeffSliders.size() - 1;
-//                } else {
-//                    coeffSliders.insert (sliderIdx, new Slider (Slider::LinearHorizontal, Slider::TextBoxLeft));
-//                }
-//
-//                Slider* newSlider = coeffSliders[sliderIdx];
-//                newSlider->setRange(0.0, value);
-//                newSlider->setValue (value);
-//                newSlider->setName (coeffName);
-//                addAndMakeVisible (newSlider);
-//                newSlider->addListener (this);
-//                if (coeffIndex != -1)
-//                    coeffDynamic[coeffIndex] = true;
-//                else
-//                    coeffDynamic.push_back (true);
-//
-//            } else {
-//
-//                //create a label
-//                if (coeffIndex == -1)
-//                {
-//                    coeffLabels.add (new Label (coeffName));
-//                    labelIdx = coeffLabels.size() - 1;
-//                } else {
-//                    coeffLabels.insert (labelIdx, new Label (coeffName));
-//                }
-//
-//                String labelString = " = " + String(value);
-//                Label* label = coeffLabels[labelIdx];
-//                label->setText (labelString, dontSendNotification);
-//                label->setFont (Font("Latin Modern Math", "Regular", 16.0));
-//                label->setColour (Label::textColourId, Colours::white);
-//                addAndMakeVisible (label);
-//
-//                if (coeffIndex != -1)
-//                    coeffDynamic[coeffIndex] = false;
-//                else
-//                    coeffDynamic.push_back (false);
-//            }
             
-//            if (coeffIndex == -1)
-//            {
+            if (coeffPopupState == normalCoeffState)
+            {
                 int lim = 3 - coeffName.length();
                 for (int i = 0; i < lim; ++i)
                 {
                     coeffName += "-";
                 }
-//            }
-            
-            equation = equation + coeffName + "_";
+                equation = equation + coeffName + "_";
+            } else {
+                coeffPopupState = normalCoeffState;
+            }
             
             resized();
         }
