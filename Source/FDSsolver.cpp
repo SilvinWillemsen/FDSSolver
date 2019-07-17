@@ -112,8 +112,8 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
     int idx = 0;
     Equation* eqPtr = &terms[idx];
     
-    h = sqrt(static_cast<double>(coeffValues->getValueAt(0))) * k;
-    eq->setNumPoints (h);
+    h = sqrt(2 * static_cast<double>(coeffValues->getValueAt(0)) * k);
+    eq->setNumPointsFromGridSpacing (h);
     h = 1.0 / (static_cast<double> (eq->getNumPoints()));
     for (int i = 0; i < tokens.size(); ++i)
     {

@@ -133,7 +133,7 @@ public:
     int getStencilWidth() { return static_cast<int> (uCoeffs.size()); };
     
     int getNumPoints() { return N; };
-    void setNumPoints (double h) { N = floor(1.0/h); };
+    void setNumPointsFromGridSpacing (double h) { N = floor(1.0/h); };
     
 private:
     std::vector<double> uNextCoeffs;

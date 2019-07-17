@@ -11,7 +11,7 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
-
+#include "GUIDefines.h"
 //==============================================================================
 /*
 */
@@ -26,7 +26,7 @@ enum BoundaryCondition
 class Object1D    : public Component
 {
 public:
-    Object1D (std::vector<std::vector<double>> stencil, int N);
+    Object1D (std::vector<std::vector<double>> stencil, NamedValueSet* coefficients, int N);
     ~Object1D();
 
     void paint (Graphics&) override;
@@ -41,8 +41,8 @@ public:
     double getOutput (double ratio) { int idx = floor (N * ratio); return u[idx]; };
     void mouseDown (const MouseEvent& e) override;
     
-    void setCoefficient (String name, double value) { coefficients.set(name, value); };
-    NamedValueSet* getCoefficientPtr() { return &coefficients; };
+    void setCoefficient (String name, double value) { coefficients->set(name, value); };
+    NamedValueSet* getCoefficientPtr() { return coefficients; };
     
     void setCoefficientTermIndex (Array<var>& varray) { coefficientTermIndex = varray; };
     void refreshCoefficients();
@@ -65,8 +65,10 @@ private:
     
     bool excited = false;
     
-    NamedValueSet coefficients;
+    NamedValueSet* coefficients;
     Array<var> coefficientTermIndex;
+    
+    
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object1D)
 };

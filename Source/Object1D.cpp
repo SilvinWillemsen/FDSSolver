@@ -12,7 +12,7 @@
 #include "Object1D.h"
 
 //==============================================================================
-Object1D::Object1D (std::vector<std::vector<double>> stencil, int N) : stencil (stencil), N (N)
+Object1D::Object1D (std::vector<std::vector<double>> stencil, NamedValueSet* coefficients, int N) : stencil (stencil), N (N), coefficients (coefficients)
 {
     
     uVecs.resize (3); //resize according to amount of vectors in stencil
@@ -43,7 +43,7 @@ Path Object1D::visualiseState()
     Path stringPath;
     stringPath.startNewSubPath(0, stringBounds);
     
-    auto spacing = getWidth() / static_cast<double>(N - 1);
+    auto spacing = getWidth() * GUIDefines::horStateArea / static_cast<double>(N - 1);
     auto x = spacing;
     
     for (int y = 1; y < N-1; y++)
