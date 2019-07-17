@@ -61,9 +61,17 @@ void AddCoefficient::paint (Graphics& g)
        You should replace everything in this method with your own
        drawing code..
     */
+    g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));   // clear the background
+
     if (initKeyboardFocus)
     {
-        getCoeffTextBoxPtr()->grabKeyboardFocus();
+        if (whichTextBox == 0)
+            coeffTextBox.grabKeyboardFocus();
+        else
+        {
+            coeffTextBox.setEnabled (false);
+            valueTextBox.grabKeyboardFocus();
+        }
         initKeyboardFocus = false;
     }
 }

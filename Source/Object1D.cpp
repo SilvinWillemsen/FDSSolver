@@ -12,7 +12,10 @@
 #include "Object1D.h"
 
 //==============================================================================
-Object1D::Object1D (std::vector<std::vector<double>> stencil, NamedValueSet* coefficients, int N) : stencil (stencil), N (N), coefficients (coefficients)
+Object1D::Object1D (String equationString, std::vector<std::vector<double>> stencil, NamedValueSet* coefficients, int N) : equationString (equationString),
+                                                                                                                           stencil (stencil),
+                                                                                                                           N (N),
+                                                                                                                           coefficients (coefficients)
 {
     
     uVecs.resize (3); //resize according to amount of vectors in stencil
@@ -25,6 +28,19 @@ Object1D::Object1D (std::vector<std::vector<double>> stencil, NamedValueSet* coe
     uPrev = &uVecs[2][0];
     
     stencilIdxStart = (stencil[0].size() - 1) / 2.0; // should be an integer
+    
+    // GUI STUFF
+    
+    editButton.setName ("Edit");
+    editButton.setButtonText ("Edit");
+    editButton.addListener (this);
+    addAndMakeVisible (editButton);
+    
+    removeButton.setName ("Remove");
+    removeButton.setButtonText (String (CharPointer_UTF8 ("\xc3\x97")));
+    removeButton.addListener (this);
+    addAndMakeVisible (removeButton);
+    
 }
 
 Object1D::~Object1D()
@@ -33,6 +49,7 @@ Object1D::~Object1D()
 
 void Object1D::paint (Graphics& g)
 {
+    g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));   // clear the background
     g.setColour (Colours::cyan);
     g.strokePath(visualiseState(), PathStrokeType(2.0f));
 }
@@ -42,8 +59,8 @@ Path Object1D::visualiseState()
     auto stringBounds = getHeight() / 2.0;
     Path stringPath;
     stringPath.startNewSubPath(0, stringBounds);
-    
-    auto spacing = getWidth() * GUIDefines::horStateArea / static_cast<double>(N - 1);
+    int stateWidth = GUIDefines::horStateArea * getWidth();
+    auto spacing = stateWidth / static_cast<double>(N - 1);
     auto x = spacing;
     
     for (int y = 1; y < N-1; y++)
@@ -55,15 +72,19 @@ Path Object1D::visualiseState()
         stringPath.lineTo(x, newY);
         x += spacing;
     }
-    stringPath.lineTo(getWidth(), stringBounds);
+    stringPath.lineTo(stateWidth, stringBounds);
     return stringPath;
 }
 
 void Object1D::resized()
 {
-    // This method is where you should set the bounds of any child
-    // components that your component contains..
-
+    Rectangle<int> buttonArea = getLocalBounds();
+    buttonArea.removeFromLeft (GUIDefines::horStateArea * getWidth());
+    buttonArea.removeFromLeft (GUIDefines::margin);
+    buttonArea.removeFromRight (GUIDefines::margin);
+    
+    editButton.setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+    removeButton.setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
 }
 
 void Object1D::calculateFDS()
@@ -119,4 +140,18 @@ void Object1D::refreshCoefficients()
             std::cout << "Term " << i << " is multiplied by " << coefficientTermIndex[i][j].toString() << std::endl;
         }
     }
+}
+
+void Object1D::buttonClicked (Button* button)
+{
+    if (button == &editButton)
+    {
+        action = editObject;
+    }
+    if (button == &removeButton)
+    {
+        action = removeObject;
+    }
+    
+    sendChangeMessage();
 }

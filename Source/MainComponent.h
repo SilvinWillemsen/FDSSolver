@@ -10,6 +10,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GUIDefines.h"
+#include "CoefficientComponent.h"
 #include "FDSsolver.h"
 #include "AddCoefficient.h"
 #include "Object1D.h"
@@ -19,12 +20,24 @@
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
+enum ApplicationState
+{
+    normalAppState,
+    editObjectState,
+};
+
+enum CoeffPopupState
+{
+    normalCoeffState,
+    editingCoeff,
+};
 
 class MainComponent   : public AudioAppComponent,
                         public Button::Listener,
                         public Slider::Listener,
                         public Timer,
-                        public KeyListener
+                        public KeyListener,
+                        public ChangeListener
 {
 public:
     //==============================================================================
@@ -40,8 +53,10 @@ public:
     void paint (Graphics& g) override;
     void resized() override;
 
+    void changeListenerCallback (ChangeBroadcaster* source) override;
     void buttonClicked (Button* button) override;
     void sliderValueChanged (Slider* slider) override;
+    
     
     void refresh();
     
@@ -102,10 +117,17 @@ private:
     ScopedPointer<AddCoefficient> addCoeffWindow;
     NamedValueSet coefficients;
     
+    OwnedArray<CoefficientComponent> coefficientComponents;
+    
     ScopedPointer<Label> coeffTopLabel;
     OwnedArray<Label> coeffLabels;
     std::vector<bool> coeffDynamic;
 
     OwnedArray<Object1D> objects;
+    
+    ApplicationState appState = normalAppState;
+    CoeffPopupState coeffPopupState = normalCoeffState;
+    
+    Object1D* editingObject;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

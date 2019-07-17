@@ -14,6 +14,10 @@
       <FILE id="ooNCwQ" name="Equation.h" compile="0" resource="0" file="Source/Equation.h"/>
       <FILE id="UsaCRX" name="FDSsolver.cpp" compile="1" resource="0" file="Source/FDSsolver.cpp"/>
       <FILE id="mIQaXp" name="FDSsolver.h" compile="0" resource="0" file="Source/FDSsolver.h"/>
+      <FILE id="yLzTAc" name="CoefficientComponent.cpp" compile="1" resource="0"
+            file="Source/CoefficientComponent.cpp"/>
+      <FILE id="YK45Gr" name="CoefficientComponent.h" compile="0" resource="0"
+            file="Source/CoefficientComponent.h"/>
       <FILE id="co0IzZ" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
       <FILE id="sV00HW" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>

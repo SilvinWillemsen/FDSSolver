@@ -112,7 +112,11 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
     int idx = 0;
     Equation* eqPtr = &terms[idx];
     
-    h = sqrt(2 * static_cast<double>(coeffValues->getValueAt(0)) * k);
+    if (eq->getStencilWidth() == 5)
+        h = sqrt(2 * static_cast<double>(coeffValues->getValueAt(0)) * k);
+    else if (eq->getStencilWidth() == 3)
+        h = sqrt (static_cast<double> (coeffValues->getValueAt(0))) * k;
+    
     eq->setNumPointsFromGridSpacing (h);
     h = 1.0 / (static_cast<double> (eq->getNumPoints()));
     for (int i = 0; i < tokens.size(); ++i)
@@ -187,6 +191,11 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
                         coefficientTermIndex[idx].append (tokens[i].upToFirstOccurrenceOf ("-", false, true));
                     
                     auto valuePtr =  coeffValues->getVarPointer (tokens[i].upToFirstOccurrenceOf ("-", false, true));
+                    if (valuePtr == NULL)
+                    {
+                        std::cout << "Coefficient was deleted" << std::endl;
+                        return false;
+                    }
                     coeffsPerTerm[idx] *= static_cast<double> (*valuePtr);
                 }
         }

@@ -37,13 +37,15 @@ public:
     void setCoeffName (String name) { coeffTextBox.setText(name); };
     TextEditor* getCoeffTextBoxPtr() { return &coeffTextBox; };
     
-    void setKeyboardFocus (bool val) { initKeyboardFocus = true; };
+    void setKeyboardFocus (bool val, bool which) { initKeyboardFocus = true; whichTextBox = which; };
 
     void textEditorReturnKeyPressed (TextEditor& textBox) override;
     
 private:
     TextEditor coeffTextBox;
     TextEditor valueTextBox;
+    
+    int whichTextBox = 0;
     Label addCoeffLabel;
     Label valueLabel;
     TextButton addCoeff;

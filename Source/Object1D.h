@@ -12,6 +12,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GUIDefines.h"
+#include "Equation.h"
 //==============================================================================
 /*
 */
@@ -23,14 +24,18 @@ enum BoundaryCondition
     freeBC,
 };
 
-class Object1D    : public Component
+class Object1D    : public Component,
+                    public Button::Listener,
+                    public ChangeBroadcaster
 {
 public:
-    Object1D (std::vector<std::vector<double>> stencil, NamedValueSet* coefficients, int N);
+    Object1D (String equationString, std::vector<std::vector<double>> stencil, NamedValueSet* coefficients, int N);
     ~Object1D();
 
     void paint (Graphics&) override;
     void resized() override;
+    
+    String getEquationString() { return equationString; };
     
     Path visualiseState();
     void calculateFDS();
@@ -47,8 +52,15 @@ public:
     void setCoefficientTermIndex (Array<var>& varray) { coefficientTermIndex = varray; };
     void refreshCoefficients();
     
+    void buttonClicked (Button* button) override;
+    
+    Action getAction() { return action; };
+    
+    void setZero() { for (int i = 0; i < uVecs.size(); ++i) for (int j = 0; j < uVecs[i].size(); ++j) uVecs[i][j] = 0; }
     
 private:
+    String equationString;
+    
     double* uNext;
     double* u;
     double* uPrev;
@@ -68,7 +80,10 @@ private:
     NamedValueSet* coefficients;
     Array<var> coefficientTermIndex;
     
+    TextButton removeButton;
+    TextButton editButton;
     
-
+    Action action = noAction;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object1D)
 };
