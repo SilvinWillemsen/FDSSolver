@@ -10,6 +10,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GUIDefines.h"
+#include "Calculator.h"
 #include "CoefficientComponent.h"
 #include "FDSsolver.h"
 #include "AddCoefficient.h"
@@ -54,62 +55,28 @@ public:
     void createPhysicalModel();
     void editPhysicalModel();
     
+    void addCoefficient();
+    
     void refresh();
-    
-    // Use for one character
-    String encoder (String equation);
-    
-    // Use for multiple characters
-    String decoder (String equation);
     
     void timerCallback() override;
     double clip (double output, double min = -1.0, double max = 1.0);
     
     bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
-    bool keyStateChanged (bool keyDown, Component* originatingComponent) override;
     
+    int testFunc (int test);
 private:
     //==============================================================================
     // Your private member variables go here...
+    Calculator* calculator;
+    
     ScopedPointer<FDSsolver> fdsSolver = nullptr;
     ScopedPointer<Equation> eq = nullptr;
     double fs;
     int bufferSize;
-    String deltaString;
-    OwnedArray<TextButton> buttons;
+    
     OwnedArray<TextButton> coeffButtons;
     OwnedArray<Slider> coeffSliders;
-    OwnedArray<Label> labels;
-    
-    TextButton* createPM = nullptr;
-    TextButton* clearEq = nullptr;
-    
-    int startOfOperators;
-    
-    TextButton* plus = nullptr;
-    TextButton* minus = nullptr;
-    TextButton* equals = nullptr;
-    
-    TextButton* deltaForwT = nullptr;
-    TextButton* deltaBackT = nullptr;
-    TextButton* deltaCentT = nullptr;
-    TextButton* deltaTT = nullptr;
-    
-    TextButton* deltaForwX = nullptr;
-    TextButton* deltaBackX = nullptr;
-    TextButton* deltaCentX = nullptr;
-    TextButton* deltaXX = nullptr;
-    
-    TextButton* minusSign = nullptr;
-    
-    TextButton* coeff = nullptr;
-    TextButton* backSpace = nullptr;
-    
-    ScopedPointer<Label> textBox = nullptr;
-    TextButton* uLN = nullptr;
-    
-    String equation;
-    StringCode stringCode;
 
     ScopedPointer<AddCoefficient> addCoeffWindow;
     
@@ -129,7 +96,5 @@ private:
     Object1D* editingObject = nullptr;
     bool repaintFlag = false;
     
-    bool createPMalreadyClicked = false;
-    bool returnKeyIsDown = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

@@ -45,12 +45,13 @@ public:
     void setCoeffName (String name) { coeffTextBox.setText(name); };
     TextEditor* getCoeffTextBoxPtr() { return &coeffTextBox; };
     
-    void setCoeffState (CoeffPopupState state) { coeffPopupState = state; };
+    void setCoeffPopupState (CoeffPopupState state) { coeffPopupState = state; };
     
     void setKeyboardFocus() { initKeyboardFocus = true; };
 
     void textEditorReturnKeyPressed (TextEditor& textBox) override;
     
+    CoeffPopupState getCoeffPopupState() { return coeffPopupState; };
 private:
     TextEditor coeffTextBox;
     TextEditor valueTextBox;

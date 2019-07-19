@@ -18,6 +18,8 @@
             file="Source/CoefficientComponent.cpp"/>
       <FILE id="YK45Gr" name="CoefficientComponent.h" compile="0" resource="0"
             file="Source/CoefficientComponent.h"/>
+      <FILE id="IogWGB" name="Calculator.cpp" compile="1" resource="0" file="Source/Calculator.cpp"/>
+      <FILE id="bzy1o0" name="Calculator.h" compile="0" resource="0" file="Source/Calculator.h"/>
       <FILE id="co0IzZ" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
       <FILE id="sV00HW" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>

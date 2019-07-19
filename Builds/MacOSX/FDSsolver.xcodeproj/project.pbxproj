@@ -89,6 +89,10 @@
 			isa = PBXBuildFile;
 			fileRef = 8AB82C42EC2AA22B79842817;
 		};
+		1249868DDBABDA6AC1EEB59F = {
+			isa = PBXBuildFile;
+			fileRef = 4E821FBAE0CA20A33AA953DE;
+		};
 		7095E3A99963DCF9DA0FFB95 = {
 			isa = PBXBuildFile;
 			fileRef = FC095E454E03576AC59112B2;
@@ -277,6 +281,20 @@
 			lastKnownFileType = sourcecode.c.h;
 			name = Equation.h;
 			path = ../../Source/Equation.h;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4A19801D0AD081141D3BBEEA = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.h;
+			name = Calculator.h;
+			path = ../../Source/Calculator.h;
+			sourceTree = "SOURCE_ROOT";
+		};
+		4E821FBAE0CA20A33AA953DE = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = Calculator.cpp;
+			path = ../../Source/Calculator.cpp;
 			sourceTree = "SOURCE_ROOT";
 		};
 		50F795ED7FE001CFA9017D54 = {
@@ -594,6 +612,8 @@
 				A492D0D285E1DBCE5DFAD76C,
 				8AB82C42EC2AA22B79842817,
 				A38A57E8D6343C42DF5A01AA,
+				4E821FBAE0CA20A33AA953DE,
+				4A19801D0AD081141D3BBEEA,
 				FC095E454E03576AC59112B2,
 				E2C7661EF6422A2DD75D6EF6,
 				6957FEC4EF6102FF79EDD7A7,
@@ -919,6 +939,7 @@
 				995AE99120D5817F8A0C71C1,
 				C559C54A0BF09E9F850ED5F9,
 				E221DD0661F97B8D9EE0D744,
+				1249868DDBABDA6AC1EEB59F,
 				7095E3A99963DCF9DA0FFB95,
 				57AA9B0A89EC9A67496699C2,
 				B6B357D37F92825B459C945E,

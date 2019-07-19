@@ -11,56 +11,6 @@
 #pragma once
 #include "../JuceLibraryCode/JuceHeader.h"
 
-class StringCode
-{
-    
-public:
-    const StringArray encoded = {
-        "100",
-        "101",
-        "102",
-        "200",
-        "201",
-        "202",
-        "203",
-        "204",
-        "205",
-        "206",
-        "207",
-        "300",
-        "901"
-    };
-    
-    const StringArray decoded = {
-        " = ",
-        " + ",
-        " " + String(CharPointer_UTF8 ("\xe2\x80\x93")) + " ",
-        String(CharPointer_UTF8 ("\xce\xb4")) + "t+",
-        String(CharPointer_UTF8 ("\xce\xb4")) + "t-",
-        String(CharPointer_UTF8 ("\xce\xb4")) + "t" + String (CharPointer_UTF8 ("\xc2\xb7")),
-        String(CharPointer_UTF8 ("\xce\xb4")) + "tt",
-        String(CharPointer_UTF8 ("\xce\xb4")) + "x+",
-        String(CharPointer_UTF8 ("\xce\xb4")) + "x-",
-        String(CharPointer_UTF8 ("\xce\xb4")) + "x" + String (CharPointer_UTF8 ("\xc2\xb7")),
-        String(CharPointer_UTF8 ("\xce\xb4")) + "xx",
-        "u",
-        "-"
-    };
-    
-    
-    
-    int getStringArraySize() {
-        if (encoded.size() != decoded.size())
-        {
-            std::cout << "StringArrays are not the same size." << std::endl;
-            return 0;
-        } else {
-            return encoded.size();
-        }
-        
-    };
-};
-
 // Class that contains the stencil and upon which can be performed operations
 
 class Equation

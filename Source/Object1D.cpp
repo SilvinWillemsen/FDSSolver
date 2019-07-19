@@ -22,9 +22,11 @@ Object1D::Object1D (String equationString, Equation stencil, double h) : equatio
     for (int i = 0; i < uVecs.size(); ++i)
         uVecs[i] = std::vector<double> (N, 0);
     
-    uNext = &uVecs[0][0];
-    u = &uVecs[1][0];
-    uPrev = &uVecs[2][0];
+    numTimeSteps = stencil.getTimeSteps();
+    u.resize (numTimeSteps);
+    
+    for (int i = 0; i < u.size(); ++i)
+        u[i] = &uVecs[i][0];
     
     stencilIdxStart = (stencil.getStencilWidth() - 1) / 2.0; // should be an integer
     
@@ -66,7 +68,7 @@ Path Object1D::visualiseState()
     for (int y = 1; y < N-1; y++)
     {
         int visualScaling = 10;
-        float newY = uNext[y] * visualScaling + stringBounds;
+        float newY = u[0][y] * visualScaling + stringBounds;
         
         if (isnan(x) || isinf(abs(x) || isnan(newY) || isinf(abs(newY))))
         {
@@ -97,27 +99,21 @@ void Object1D::calculateFDS()
 {
     for (int l = 2; l < N - 1; ++l)
     {
-        uNext[l] = 0;
+        u[0][l] = 0;
         for (int j = 0; j < stencil.getStencilWidth(); ++j)
         {
-            uNext[l] = uNext[l] - stencil[1][j] * u[l - stencilIdxStart + j] - stencil[2][j] * uPrev[l - stencilIdxStart + j];
+            u[0][l] = u[0][l] - stencil[1][j] * u[1][l - stencilIdxStart + j] - stencil[2][j] * u[2][l - stencilIdxStart + j];
         }
     }
 }
 
 void Object1D::updateStates()
 {
-    uPrev = u;
-    u = uNext;
-    for (int l = 0; l < N; ++l)
-    {
-        if (uNext[l] != 0 || u[l] != 0 || uPrev[l] != 0)
-        {
-            std::cout << "wut" << std::endl;
-        }
-    }
-    uNextPtrIdx = (uNextPtrIdx + 2) % 3;
-    uNext = &uVecs[uNextPtrIdx][0];
+    int lengthUVec = static_cast<int>(u.size());
+    for (int i = lengthUVec - 1; i > 0; --i)
+        u[i] = u[i - 1];
+    uNextPtrIdx = (uNextPtrIdx + (lengthUVec - 1)) % lengthUVec;
+    u[0] = &uVecs[uNextPtrIdx][0];
 }
 
 void Object1D::excite()
@@ -131,8 +127,8 @@ void Object1D::excite()
         for (int i = 0; i < width; ++i)
         {
             double val = (1 - cos (2 * double_Pi * i / width)) * 0.5;
-            u[startIdx + i] = u[startIdx + i] + val;
-            uPrev[startIdx + i] =  uPrev[startIdx + i] + val;
+            for (int j = 1; j < u.size(); ++j)
+                u[j][startIdx + i] = u[j][startIdx + i] + val;
         }
     }
     
@@ -155,6 +151,13 @@ void Object1D::refreshCoefficients()
 
 void Object1D::buttonClicked (Button* button)
 {
+    KeyPress key = KeyPress (KeyPress::returnKey);
+    if (key.KeyPress::isCurrentlyDown())
+    {
+        button->setState (Button::ButtonState::buttonNormal);
+        return;
+    }
+    
     if (button == &editButton)
     {
         action = editObject;

@@ -43,9 +43,8 @@ public:
     void updateStates();
     
     void excite();
-    double getOutput (double ratio) { int idx = floor (N * ratio); return u[idx]; };
+    double getOutput (double ratio) { int idx = floor (N * ratio); return u[1][idx]; };
     void mouseDown (const MouseEvent& e) override;
-    
     
     void setCoefficient (String name, double value) { coefficients.set(name, value); };
     void setCoefficients (NamedValueSet* coeffs) { for (int i = 0; i < coeffs->size(); ++i) coefficients.set (coeffs->getName (i), coeffs->getValueAt (i)); };
@@ -65,12 +64,11 @@ public:
 private:
     String equationString;
     
-    double* uNext;
-    double* u;
-    double* uPrev;
+    // pointers to the different states
+    std::vector<double*> u;
     
     Equation stencil;
-    
+    int numTimeSteps;
     int N;
     double h;
     

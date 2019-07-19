@@ -13,7 +13,7 @@
 
 //==============================================================================
 
-FDSsolver::FDSsolver(StringCode* stringCode, double k) : stringCode (stringCode), k (k)
+FDSsolver::FDSsolver(double k) : k (k)
 {
     // In your constructor, you should add any child components, and
     // initialise any special settings that your component needs.

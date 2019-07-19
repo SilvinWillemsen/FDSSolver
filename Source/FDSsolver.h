@@ -19,7 +19,7 @@
 class FDSsolver    : public Component
 {
 public:
-    FDSsolver (StringCode* stringCode, double k);
+    FDSsolver (double k);
     ~FDSsolver();
 
     void paint (Graphics&) override;
@@ -58,7 +58,6 @@ public:
     Array<var>& getCoeffTermIndex() { return coefficientTermIndex; };
     
 private:
-    StringCode* stringCode;
     
     int numTerms = 0;
     std::vector<Equation> terms;
