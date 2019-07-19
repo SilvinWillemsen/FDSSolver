@@ -26,12 +26,6 @@ enum ApplicationState
     editObjectState,
 };
 
-enum CoeffPopupState
-{
-    normalCoeffState,
-    editingCoeff,
-};
-
 class MainComponent   : public AudioAppComponent,
                         public Button::Listener,
                         public Slider::Listener,
@@ -57,6 +51,8 @@ public:
     void buttonClicked (Button* button) override;
     void sliderValueChanged (Slider* slider) override;
     
+    void createPhysicalModel();
+    void editPhysicalModel();
     
     void refresh();
     
@@ -70,6 +66,7 @@ public:
     double clip (double output, double min = -1.0, double max = 1.0);
     
     bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
+    bool keyStateChanged (bool keyDown, Component* originatingComponent) override;
     
 private:
     //==============================================================================
@@ -115,7 +112,6 @@ private:
     StringCode stringCode;
 
     ScopedPointer<AddCoefficient> addCoeffWindow;
-    NamedValueSet coefficients;
     
     OwnedArray<CoefficientComponent> coefficientComponents;
     
@@ -123,11 +119,17 @@ private:
     OwnedArray<Label> coeffLabels;
     std::vector<bool> coeffDynamic;
 
+    NamedValueSet coefficients;
+    
     OwnedArray<Object1D> objects;
     
     ApplicationState appState = normalAppState;
     CoeffPopupState coeffPopupState = normalCoeffState;
     
-    Object1D* editingObject;
+    Object1D* editingObject = nullptr;
+    bool repaintFlag = false;
+    
+    bool createPMalreadyClicked = false;
+    bool returnKeyIsDown = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

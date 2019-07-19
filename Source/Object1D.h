@@ -29,7 +29,7 @@ class Object1D    : public Component,
                     public ChangeBroadcaster
 {
 public:
-    Object1D (String equationString, std::vector<std::vector<double>> stencil, NamedValueSet* coefficients, int N);
+    Object1D (String equationString, Equation stencil, double h);
     ~Object1D();
 
     void paint (Graphics&) override;
@@ -46,8 +46,10 @@ public:
     double getOutput (double ratio) { int idx = floor (N * ratio); return u[idx]; };
     void mouseDown (const MouseEvent& e) override;
     
-    void setCoefficient (String name, double value) { coefficients->set(name, value); };
-    NamedValueSet* getCoefficientPtr() { return coefficients; };
+    
+    void setCoefficient (String name, double value) { coefficients.set(name, value); };
+    void setCoefficients (NamedValueSet* coeffs) { for (int i = 0; i < coeffs->size(); ++i) coefficients.set (coeffs->getName (i), coeffs->getValueAt (i)); };
+    NamedValueSet* getCoefficientPtr() { return &coefficients; };
     
     void setCoefficientTermIndex (Array<var>& varray) { coefficientTermIndex = varray; };
     void refreshCoefficients();
@@ -56,8 +58,10 @@ public:
     
     Action getAction() { return action; };
     
-    void setZero() { for (int i = 0; i < uVecs.size(); ++i) for (int j = 0; j < uVecs[i].size(); ++j) uVecs[i][j] = 0; }
+    void setZero() { for (int i = 0; i < uVecs.size(); ++i) for (int j = 0; j < uVecs[i].size(); ++j) uVecs[i][j] = 0; setZFlag = false; }
+    void setZeroFlag() { setZFlag = true; }
     
+    bool needsToBeZero() { return setZFlag; };
 private:
     String equationString;
     
@@ -65,8 +69,11 @@ private:
     double* u;
     double* uPrev;
     
-    std::vector<std::vector<double>> stencil;
+    Equation stencil;
+    
     int N;
+    double h;
+    
     int uNextPtrIdx = 0;
     std::vector<std::vector<double>> uVecs;
     
@@ -77,7 +84,7 @@ private:
     
     bool excited = false;
     
-    NamedValueSet* coefficients;
+    NamedValueSet coefficients;
     Array<var> coefficientTermIndex;
     
     TextButton removeButton;
@@ -85,5 +92,6 @@ private:
     
     Action action = noAction;
     
+    bool setZFlag = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object1D)
 };

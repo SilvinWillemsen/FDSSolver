@@ -17,12 +17,12 @@ AddCoefficient::AddCoefficient()
     // In your constructor, you should add any child components, and
     // initialise any special settings that your component needs.
     addAndMakeVisible (coeffTextBox);
-    addCoeffLabel.setColour (Label::textColourId, Colours::black);
+    addCoeffLabel.setColour (Label::textColourId, Colours::white);
     addCoeffLabel.setText ("Coefficient Name", dontSendNotification);
     addAndMakeVisible (addCoeffLabel);
 
     addAndMakeVisible (valueTextBox);
-    valueLabel.setColour (Label::textColourId, Colours::black);
+    valueLabel.setColour (Label::textColourId, Colours::white);
     valueLabel.setText ("Value", dontSendNotification);
     addAndMakeVisible (valueLabel);
 
@@ -34,9 +34,9 @@ AddCoefficient::AddCoefficient()
     addCoeff.addListener (this);
     
     dynamic.setButtonText ("Dynamic");
-    dynamic.setColour (ToggleButton::textColourId, Colours::black);
-    dynamic.setColour (ToggleButton::tickColourId, Colours::black);
-    dynamic.setColour (ToggleButton::tickDisabledColourId, Colours::black);
+    dynamic.setColour (ToggleButton::textColourId, Colours::white);
+    dynamic.setColour (ToggleButton::tickColourId, Colours::white);
+    dynamic.setColour (ToggleButton::tickDisabledColourId, Colours::white);
     addAndMakeVisible (dynamic);
     dynamic.addListener (this);
     
@@ -55,23 +55,19 @@ AddCoefficient::~AddCoefficient()
 
 void AddCoefficient::paint (Graphics& g)
 {
-    /* This demo code just fills the component's background and
-       draws some placeholder text to get you started.
 
-       You should replace everything in this method with your own
-       drawing code..
-    */
     g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));   // clear the background
 
     if (initKeyboardFocus)
     {
-        if (whichTextBox == 0)
+        valueLabel.setText ("Value", dontSendNotification);
+        if (coeffPopupState == normalCoeffState)
         {
             coeffTextBox.setEnabled (true);
             addCoeff.setButtonText ("Add Coefficient");
             coeffTextBox.grabKeyboardFocus();
         }
-        else
+        else if (coeffPopupState == editingCoeff)
         {
             coeffTextBox.setEnabled (false);
             addCoeff.setButtonText ("Edit Coefficient");

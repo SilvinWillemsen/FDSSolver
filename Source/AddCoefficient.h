@@ -15,6 +15,14 @@
 //==============================================================================
 /*
 */
+
+enum CoeffPopupState
+{
+    normalCoeffState,
+    editingCoeff,
+};
+
+
 class AddCoefficient    : public Component,
                           public Button::Listener,
                           public TextEditor::Listener
@@ -37,7 +45,9 @@ public:
     void setCoeffName (String name) { coeffTextBox.setText(name); };
     TextEditor* getCoeffTextBoxPtr() { return &coeffTextBox; };
     
-    void setKeyboardFocus (bool val, bool which) { initKeyboardFocus = true; whichTextBox = which; };
+    void setCoeffState (CoeffPopupState state) { coeffPopupState = state; };
+    
+    void setKeyboardFocus() { initKeyboardFocus = true; };
 
     void textEditorReturnKeyPressed (TextEditor& textBox) override;
     
@@ -55,5 +65,7 @@ private:
     double value;
     bool dynamicBool = false;
     bool initKeyboardFocus = true;
+    
+    CoeffPopupState coeffPopupState = normalCoeffState;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AddCoefficient)
 };

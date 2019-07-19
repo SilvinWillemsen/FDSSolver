@@ -65,15 +65,16 @@ bool FDSsolver::checkEquation(String& equationString)
     return true;
 }
 
-bool FDSsolver::solve (String& equationString, Equation* eq)
+bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coeffValues, Array<var>& coefficientTermIndex)
 {
     StringArray tokens;
     tokens.addTokens (equationString, "_", "\"");
     tokens.remove (tokens.size() - 1);
     
-    // check syntax
-    if (!checkSyntax (tokens))
-        return false;
+    // check syntax if not debugging
+    if (!GUIDefines::debug)
+        if (!checkSyntax (tokens))
+            return false;
     
     // calculate number of terms
     int numTerms = 1;
@@ -91,6 +92,7 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
     int equalsSignIdx = 0;
     bool newTermFlag = false;
     
+    terms.clear();
     terms.reserve(numTerms);
     
     std::vector<double> tmpCoeffsPerTerm (numTerms, 1);
@@ -101,24 +103,24 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
     tmpArray.add (1);
     
     //clear the coefficientTermIndex and initialise with 1's
-    coefficientTermIndex.clear();
+    
     for (int i = 0; i < numTerms; ++i)
         coefficientTermIndex.add (tmpArray);
     
     std::vector<int> operatorVect (numTerms - 1, 0);
     
-    terms.push_back(Equation (eq->getStencilWidth(), true));
+    terms.push_back(Equation (eq.getTimeSteps(), eq.getStencilWidth(), true));
     
     int idx = 0;
-    Equation* eqPtr = &terms[idx];
     
-    if (eq->getStencilWidth() == 5)
-        h = sqrt(2 * static_cast<double>(coeffValues->getValueAt(0)) * k);
-    else if (eq->getStencilWidth() == 3)
-        h = sqrt (static_cast<double> (coeffValues->getValueAt(0))) * k;
+    // calculate h
+    if (GUIDefines::debug)
+        h = 1;
+    else
+        calculateGridSpacing (eq, coeffValues->getValueAt(0));
     
-    eq->setNumPointsFromGridSpacing (h);
-    h = 1.0 / (static_cast<double> (eq->getNumPoints()));
+    eq.setNumPointsFromGridSpacing (h);
+    h = 1.0 / (static_cast<double> (eq.getNumPoints()));
     for (int i = 0; i < tokens.size(); ++i)
     {
         String firstChar = tokens[i].substring(0, 1);
@@ -129,9 +131,8 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
         
         if (newTermFlag)
         {
-            terms.push_back(Equation (eq->getStencilWidth(), true));
+            terms.push_back(Equation (eq.getTimeSteps(), eq.getStencilWidth(), true));
             ++idx;
-            eqPtr = &terms[idx];
             newTermFlag = false;
         }
         switch (firstInt)
@@ -144,34 +145,35 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
                 }
                 break;
             case 2:
+
                 switch(tokens[i].getIntValue())
                 {
                     case 200:
-                        forwDiffT (eqPtr);
+                        forwDiffT (terms[idx]);
                         break;
                     case 201:
-                        backDiffT (eqPtr);
+                        backDiffT (terms[idx]);
                         break;
                     case 202:
-                        centDiffT (eqPtr);
+                        centDiffT (terms[idx]);
                         break;
                     case 203:
-                        secondOrderT (eqPtr);
+                        secondOrderT (terms[idx]);
                         break;
                     case 204:
-                        forwDiffX (eqPtr);
+                        forwDiffX (terms[idx]);
                         break;
                     case 205:
-                        backDiffX (eqPtr);
+                        backDiffX (terms[idx]);
                         break;
                     case 206:
-                        centDiffX (eqPtr);
+                        centDiffX (terms[idx]);
                         break;
                     case 207:
-                        secondOrderX (eqPtr);
+                        secondOrderX (terms[idx]);
                         break;
                     case 208:
-                        fourthOrderX (eqPtr);
+                        fourthOrderX (terms[idx]);
                         break;
                 }
                 break;
@@ -210,6 +212,12 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
         }
     }
     
+    // DEBUG
+//    for (auto term : terms)
+//    {
+//        term.showStencil();
+//    }
+    
     for (int i = 0; i < terms.size(); ++i)
     {
         int operatorMult = 1;
@@ -222,26 +230,38 @@ bool FDSsolver::solve (String& equationString, Equation* eq)
         if (i < equalsSignIdx)
         {
             Equation term = (terms[i]) * (coeffsPerTerm[i] * operatorMult);
-            *eq = (*eq) + term;
+            eq = eq + term;
         } else {
             Equation term = (terms[i]) * (coeffsPerTerm[i] * operatorMult);
-            *eq = (*eq) - term;
+            eq = eq - term;
         }
     }
     
-    int uNextIdx = (eq->getStencilWidth() - 1) / 2.0;
+    int uNextIdx = (eq.getStencilWidth() - 1) / 2.0;
     
-    if (eq->getUNextCoeffs()[uNextIdx] == 0)
+    if (eq.getUCoeffs(0)[uNextIdx] == 0)
     {
         std::cout << "No u^{n+1}" << std::endl;
         return false;
     }
     
     if (!GUIDefines::debug)
-        *eq = (*eq) / (eq->getUNextCoeffs()[uNextIdx]);
-    eq->showStencil();
-    solvedEquation = *eq;
+        eq = eq / (eq.getUCoeffs(0)[uNextIdx]);
+    
+    eq.showStencil();
     return true;
+}
+
+double FDSsolver::calculateGridSpacing (Equation& eq, double coeff)
+{
+    // stability analysis here //
+    
+//    if (eq.getStencilWidth() == 5)
+//        h = sqrt(2 * static_cast<double>(coeff) * k);
+//    else if (eq.getStencilWidth() == 3)
+        h = sqrt (static_cast<double> (coeff)) * k;
+    
+    return h;
 }
 
 bool FDSsolver::checkSyntax (StringArray& tokens)
@@ -323,172 +343,184 @@ void FDSsolver::applyOperator(Equation *equation, void (*)(Equation *))
 
 // OPERATORS //
 
-Equation* FDSsolver::forwDiffX(Equation* eq)
+Equation& FDSsolver::forwDiffX(Equation& eq)
 {
-//    bool res = eq->check (eq->getStencilWidth() - 1);
-//    if (!res)
-//    {
-//        return eq;
-//    }
+    for (int i = 0; i < eq.getTimeSteps(); ++i)
+        for (int j = eq.getStencilWidth() - 2; j >= 0; --j)
+            eq.getUCoeffs(i)[j + 1] = eq.getUCoeffs(i)[j] - eq.getUCoeffs(i)[j + 1];
+    eq = eq * (1.0/h);
     
-    for (int i = eq->getStencilWidth() - 2; i >= 0; --i)
-    {
-        eq->getUNextCoeffs()[i + 1] = eq->getUNextCoeffs()[i] - eq->getUNextCoeffs()[i + 1];
-        eq->getUCoeffs()[i + 1] = eq->getUCoeffs()[i] - eq->getUCoeffs()[i + 1];
-        eq->getUPrevCoeffs()[i + 1] = eq->getUPrevCoeffs()[i] - eq->getUPrevCoeffs()[i + 1];
-    }
-    *eq = (*eq) * (1.0/h);
     return eq;
 }
 
-Equation* FDSsolver::backDiffX(Equation* eq)
+Equation& FDSsolver::backDiffX (Equation& eq)
 {
-//    bool res = eq->check(0);
-//    if (!res)
+    for (int i = 0; i < eq.getTimeSteps(); ++i)
+        for (int j = 1; j < eq.getStencilWidth(); ++j)
+            eq.getUCoeffs(i)[j - 1] -= eq.getUCoeffs(i)[j];
+    eq = eq * (1.0/h);
+    
+    return eq;
+}
+
+Equation& FDSsolver::centDiffX (Equation& eq)
+{
+    for (int i = 0; i < eq.getTimeSteps(); ++i)
+    {
+        std::vector<double> tmpSpace (eq.getStencilWidth(), 0);
+        for (int j = 0; j < eq.getStencilWidth(); ++j)
+        {
+            tmpSpace[j] = eq.getUCoeffs(i)[j];
+        }
+        for (int j = 0; j < eq.getStencilWidth() - 1; ++j)
+        {
+            eq.getUCoeffs(i)[j + 1] += tmpSpace[j];
+            eq.getUCoeffs(i)[j - 1] -= tmpSpace[j];
+            eq.getUCoeffs(i)[j] -= tmpSpace[j];
+        }
+    }
+    eq = eq * (1.0 / (2 * h));
+    return eq;
+//    std::vector<double> tmpUNext (eq->getStencilWidth(), 0);
+//    std::vector<double> tmpU (eq->getStencilWidth(), 0);
+//    std::vector<double> tmpUPrev (eq->getStencilWidth(), 0);
+//
+//    for (int i = 0; i < eq->getStencilWidth(); ++i)
 //    {
-//        return eq;
+//        tmpUNext[i] = eq->getUNextCoeffs()[i];
+//        tmpU[i] = eq->getUCoeffs()[i];
+//        tmpUPrev[i] = eq->getUPrevCoeffs()[i];
 //    }
 //
-    for (int i = 1; i < eq->getStencilWidth(); ++i)
-    {
-        eq->getUNextCoeffs()[i - 1] -= eq->getUNextCoeffs()[i];
-        eq->getUCoeffs()[i - 1] -= eq->getUCoeffs()[i];
-        eq->getUPrevCoeffs()[i - 1] -= eq->getUPrevCoeffs()[i];
-    }
-    *eq = (*eq) * (1.0/h);
-    
-    return eq;
-}
-
-Equation* FDSsolver::centDiffX (Equation* eq)
-{
-//    bool res = eq->check(0);
-//    if (res)
-//        res = eq->check(eq->getStencilWidth() - 1);
 //
-//    if (!res)
+//    for (int i = 0; i < eq->getStencilWidth(); ++i)
 //    {
-//        return eq;
+//        bool leftbound = i == 0 ? true : false;
+//        bool rightbound = i == eq->getStencilWidth() - 1 ? true : false;
+//        tmpUNext[i] = tmpUNext[i] + (rightbound ? 0 : eq->getUNextCoeffs()[i+1] ) - (leftbound ? 0 : eq->getUNextCoeffs()[i-1]) - eq->getUNextCoeffs()[i];
+//        tmpU[i] = tmpU[i] + (rightbound ? 0 : eq->getUCoeffs()[i+1]) - (leftbound ? 0 : eq->getUCoeffs()[i-1]) - eq->getUCoeffs()[i];
+//        tmpUPrev[i] = tmpUPrev[i] + (rightbound ? 0 : eq->getUPrevCoeffs()[i+1]) - (leftbound ? 0 : eq->getUPrevCoeffs()[i-1]) - eq->getUPrevCoeffs()[i];
 //    }
-    
-    std::vector<double> tmpUNext (eq->getStencilWidth(), 0);
-    std::vector<double> tmpU (eq->getStencilWidth(), 0);
-    std::vector<double> tmpUPrev (eq->getStencilWidth(), 0);
-    
-    for (int i = 0; i < eq->getStencilWidth(); ++i)
-    {
-        tmpUNext[i] = eq->getUNextCoeffs()[i];
-        tmpU[i] = eq->getUCoeffs()[i];
-        tmpUPrev[i] = eq->getUPrevCoeffs()[i];
-    }
-    
-    
-    for (int i = 0; i < eq->getStencilWidth(); ++i)
-    {
-        bool leftbound = i == 0 ? true : false;
-        bool rightbound = i == eq->getStencilWidth() - 1 ? true : false;
-        tmpUNext[i] = tmpUNext[i] + (rightbound ? 0 : eq->getUNextCoeffs()[i+1] ) - (leftbound ? 0 : eq->getUNextCoeffs()[i-1]) - eq->getUNextCoeffs()[i];
-        tmpU[i] = tmpU[i] + (rightbound ? 0 : eq->getUCoeffs()[i+1]) - (leftbound ? 0 : eq->getUCoeffs()[i-1]) - eq->getUCoeffs()[i];
-        tmpUPrev[i] = tmpUPrev[i] + (rightbound ? 0 : eq->getUPrevCoeffs()[i+1]) - (leftbound ? 0 : eq->getUPrevCoeffs()[i-1]) - eq->getUPrevCoeffs()[i];
-    }
-    
-    for (int i = 0; i < eq->getStencilWidth(); ++i)
-    {
-        eq->getUNextCoeffs()[i] = tmpUNext[i];
-        eq->getUCoeffs()[i] = tmpU[i];
-        eq->getUPrevCoeffs()[i] = tmpUPrev[i];
-    }
-    
-    *eq = (*eq) * (1.0 / (2*h));
+//
+//    for (int i = 0; i < eq->getStencilWidth(); ++i)
+//    {
+//        eq->getUNextCoeffs()[i] = tmpUNext[i];
+//        eq->getUCoeffs()[i] = tmpU[i];
+//        eq->getUPrevCoeffs()[i] = tmpUPrev[i];
+//    }
+//
+//    *eq = (*eq) * (1.0 / (2*h));
+//
+//    return eq;
+}
+
+Equation& FDSsolver::forwDiffT (Equation& eq)
+{
+    for (int i = 1; i < eq.getTimeSteps(); ++i)
+        for (int j = 0; j < eq.getStencilWidth(); ++j)
+            eq.getUCoeffs(i - 1)[j] = eq.getUCoeffs(i)[j] - eq.getUCoeffs(i - 1)[j];
+
+    eq = eq * (1.0 / k);
     
     return eq;
 }
 
-Equation* FDSsolver::forwDiffT (Equation* eq)
+Equation& FDSsolver::backDiffT (Equation& eq)
 {
-    for (int i = 0; i < eq->getStencilWidth(); ++i)
-    {
-        eq->getUNextCoeffs()[i] += eq->getUCoeffs()[i];
-        eq->getUCoeffs()[i] -= (2*eq->getUCoeffs()[i] - eq->getUPrevCoeffs()[i]);
-        eq->getUPrevCoeffs()[i] -= 2*eq->getUPrevCoeffs()[i];
-    }
-    *eq = (*eq) * (1.0 / k);
+    for (int i = eq.getTimeSteps() - 2; i >= 0; --i)
+        for (int j = 0; j < eq.getStencilWidth(); ++j)
+            eq.getUCoeffs(i + 1)[j] -= eq.getUCoeffs(i)[j];
+    
+    eq = eq * (1.0 / k);
     
     return eq;
 }
 
-Equation* FDSsolver::backDiffT (Equation* eq)
+Equation& FDSsolver::centDiffT (Equation& eq)
 {
-    for (int i = 0; i < eq->getStencilWidth(); ++i)
+    for (int j = 0; j < eq.getStencilWidth(); ++j)
     {
-        eq->getUPrevCoeffs()[i] -= eq->getUCoeffs()[i];
-        eq->getUCoeffs()[i] -= eq->getUNextCoeffs()[i];
+        std::vector<double> tmpTime (eq.getTimeSteps(), 0);
+        for (int i = 0; i < eq.getTimeSteps(); ++i)
+        {
+            tmpTime[i] = eq.getUCoeffs(i)[j];
+        }
+        for (int i = 1; i < eq.getTimeSteps() - 1; ++i)
+        {
+            eq.getUCoeffs(i - 1)[j] += tmpTime[i];
+            eq.getUCoeffs(i + 1)[j] -= tmpTime[i];
+            eq.getUCoeffs(i)[j] -= tmpTime[i];
+        }
     }
-    *eq = (*eq) * (1.0 / k);
-    
+    eq = eq * (1.0 / (2 * k));
     return eq;
 }
 
-Equation* FDSsolver::centDiffT (Equation* eq)
+std::vector<std::vector<double>> FDSsolver::getStencil (Equation& eq)
 {
-    for (int i = 0; i < eq->getStencilWidth(); ++i)
-    {
-        eq->getUNextCoeffs()[i] += eq->getUCoeffs()[i];
-        eq->getUPrevCoeffs()[i] -= eq->getUCoeffs()[i];
-        eq->getUCoeffs()[i] -= eq->getUCoeffs()[i];
-    }
-    *eq = (*eq) * (1.0 / (2*k));
+    std::vector<std::vector<double>> stencil (3, std::vector<double> (eq.getStencilWidth(), 0));
     
-    return eq;
-}
-
-std::vector<std::vector<double>> FDSsolver::getStencil (Equation* eq)
-{
-    std::vector<std::vector<double>> stencil (3, std::vector<double> (eq->getStencilWidth(), 0));
+    for (int i = 0; i < eq.getTimeSteps(); ++i)
+        for (int j = 0; j < eq.getStencilWidth(); ++i)
+            stencil[i][j] = eq.getUCoeffs(i)[j];
     
-    for (int i = 0; i < eq->getStencilWidth(); ++i)
-    {
-        stencil[0][i] = eq->getUNextCoeffs()[i];
-        stencil[1][i] = eq->getUCoeffs()[i];
-        stencil[2][i] = eq->getUPrevCoeffs()[i];
-    }
     return stencil;
 };
 
-int FDSsolver::getStencilWidth (String& equationString)
+int FDSsolver::getStencilWidth (String& equationString, bool checkSpace)
 {
     StringArray tokens;
     tokens.addTokens (equationString, "_", "\"");
     tokens.remove (tokens.size() - 1);
     
-    bool spaceDerivFlag = false;
+    bool derivFlag = false;
     int stencilSize = 1;
     int posTmpStencilSize = 0;
     int negTmpStencilSize = 0;
     
     for (int i = 0; i < tokens.size(); ++i)
     {
-        switch (tokens[i].getIntValue())
+        if (!checkSpace)
         {
-            case 204:
-                spaceDerivFlag = true;
-                ++posTmpStencilSize;
-                break;
-            case 205:
-                spaceDerivFlag = true;
-                ++negTmpStencilSize;
-                break;
-            case 206:
-            case 207:
-                spaceDerivFlag = true;
-                ++posTmpStencilSize;
-                ++negTmpStencilSize;
-                break;
+            switch (tokens[i].getIntValue())
+            {
+                case 200:
+                    derivFlag = true;
+                    ++posTmpStencilSize;
+                    break;
+                case 201:
+                    derivFlag = true;
+                    ++negTmpStencilSize;
+                    break;
+                case 202:
+                case 203:
+                    derivFlag = true;
+                    ++posTmpStencilSize;
+                    ++negTmpStencilSize;
+                    break;
+            }
+        } else {
+            switch (tokens[i].getIntValue())
+            {
+                case 204:
+                    derivFlag = true;
+                    ++posTmpStencilSize;
+                    break;
+                case 205:
+                    derivFlag = true;
+                    ++negTmpStencilSize;
+                    break;
+                case 206:
+                case 207:
+                    derivFlag = true;
+                    ++posTmpStencilSize;
+                    ++negTmpStencilSize;
+                    break;
+            }
         }
-
         if (tokens[i].substring(0, 1).getIntValue() != 2)
         {
-            spaceDerivFlag = false;
+            derivFlag = false;
             int tmpStencilSize = 2 * std::max (posTmpStencilSize, negTmpStencilSize) + 1;
             if (tmpStencilSize > stencilSize)
             {

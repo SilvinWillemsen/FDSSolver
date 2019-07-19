@@ -30,37 +30,35 @@ public:
     bool checkEquation (String& equation);
     bool checkSyntax (StringArray& tokens);
     
-    bool solve (String& equationString, Equation* eq);
+    bool solve (String& equationString, Equation& eq, NamedValueSet* coefficients, Array<var>& coefficientTermIndex);
+    double calculateGridSpacing (Equation& eq, double coeffValue);
     
     // Spatial differences
-    Equation* forwDiffX (Equation* equation);
-    Equation* backDiffX (Equation* equation);
-    Equation* centDiffX (Equation* equation);
+    Equation& forwDiffX (Equation& equation);
+    Equation& backDiffX (Equation& equation);
+    Equation& centDiffX (Equation& equation);
     
-    Equation* secondOrderX (Equation* equation) { forwDiffX(equation); backDiffX(equation); return equation; }
-    Equation* fourthOrderX (Equation* equation) { secondOrderX(equation); secondOrderX(equation); return equation;  }
+    Equation& secondOrderX (Equation& equation) { forwDiffX (equation); backDiffX(equation); return equation; }
+    Equation& fourthOrderX (Equation& equation) { secondOrderX (equation); secondOrderX(equation); return equation;  }
     
-    Equation* forwDiffT (Equation* equation);
-    Equation* backDiffT (Equation* equation);
-    Equation* centDiffT (Equation* equation);
+    Equation& forwDiffT (Equation& equation);
+    Equation& backDiffT (Equation& equation);
+    Equation& centDiffT (Equation& equation);
     
-    Equation* secondOrderT (Equation* equation) { forwDiffT(equation); backDiffT(equation); return equation; }
+    Equation& secondOrderT (Equation& equation) { forwDiffT (equation); backDiffT (equation); return equation; }
     
     void applyOperator (Equation* equation, void(*)(Equation*));
     
     bool checkAllowedCharacters (int prevTermType, StringArray& tokens, bool& hasEqualsSign);
     
-    std::vector<std::vector<double>> getStencil (Equation* eq);
-    int getStencilWidth (String& equationString);
-    
-    void setCoeffValues (NamedValueSet* values) { coeffValues = values; };
+    std::vector<std::vector<double>> getStencil (Equation& eq);
+    int getStencilWidth (String& equationString, bool checkSpace);
     
     std::vector<Equation> getTerms() { return terms; };
     Array<var>& getCoeffTermIndex() { return coefficientTermIndex; };
     
 private:
     StringCode* stringCode;
-    Equation solvedEquation;
     
     int numTerms = 0;
     std::vector<Equation> terms;
@@ -74,7 +72,6 @@ private:
     double k;
     
     int stencilSize;
-
-    NamedValueSet* coeffValues;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FDSsolver)
 };

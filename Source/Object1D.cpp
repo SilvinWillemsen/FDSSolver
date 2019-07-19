@@ -12,12 +12,11 @@
 #include "Object1D.h"
 
 //==============================================================================
-Object1D::Object1D (String equationString, std::vector<std::vector<double>> stencil, NamedValueSet* coefficients, int N) : equationString (equationString),
-                                                                                                                           stencil (stencil),
-                                                                                                                           N (N),
-                                                                                                                           coefficients (coefficients)
+Object1D::Object1D (String equationString, Equation stencil, double h) : equationString (equationString),
+                                                               stencil (stencil),
+                                                               h (h),
+                                                               N (1.0 / h)
 {
-    
     uVecs.resize (3); //resize according to amount of vectors in stencil
     
     for (int i = 0; i < uVecs.size(); ++i)
@@ -27,7 +26,7 @@ Object1D::Object1D (String equationString, std::vector<std::vector<double>> sten
     u = &uVecs[1][0];
     uPrev = &uVecs[2][0];
     
-    stencilIdxStart = (stencil[0].size() - 1) / 2.0; // should be an integer
+    stencilIdxStart = (stencil.getStencilWidth() - 1) / 2.0; // should be an integer
     
     // GUI STUFF
     
@@ -51,7 +50,8 @@ void Object1D::paint (Graphics& g)
 {
     g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));   // clear the background
     g.setColour (Colours::cyan);
-    g.strokePath(visualiseState(), PathStrokeType(2.0f));
+    Path stringPath = visualiseState();
+    g.strokePath (stringPath, PathStrokeType(2.0f));
 }
 
 Path Object1D::visualiseState()
@@ -65,8 +65,14 @@ Path Object1D::visualiseState()
     
     for (int y = 1; y < N-1; y++)
     {
-        int visualScaling = 1;
+        int visualScaling = 10;
         float newY = uNext[y] * visualScaling + stringBounds;
+        
+        if (isnan(x) || isinf(abs(x) || isnan(newY) || isinf(abs(newY))))
+        {
+            std::cout << "Wait" << std::endl;
+        };
+        
         if (isnan(newY))
             newY = 0;
         stringPath.lineTo(x, newY);
@@ -92,19 +98,24 @@ void Object1D::calculateFDS()
     for (int l = 2; l < N - 1; ++l)
     {
         uNext[l] = 0;
-        for (int j = 0; j < stencil[0].size(); ++j)
+        for (int j = 0; j < stencil.getStencilWidth(); ++j)
         {
             uNext[l] = uNext[l] - stencil[1][j] * u[l - stencilIdxStart + j] - stencil[2][j] * uPrev[l - stencilIdxStart + j];
         }
     }
-//    std::cout << std::endl;
 }
 
 void Object1D::updateStates()
 {
     uPrev = u;
     u = uNext;
-    
+    for (int l = 0; l < N; ++l)
+    {
+        if (uNext[l] != 0 || u[l] != 0 || uPrev[l] != 0)
+        {
+            std::cout << "wut" << std::endl;
+        }
+    }
     uNextPtrIdx = (uNextPtrIdx + 2) % 3;
     uNext = &uVecs[uNextPtrIdx][0];
 }

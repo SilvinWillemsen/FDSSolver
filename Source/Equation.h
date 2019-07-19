@@ -61,32 +61,30 @@ public:
     };
 };
 
+// Class that contains the stencil and upon which can be performed operations
 
 class Equation
 {
     
 public:
-    Equation (int max = 0, bool createULN = false);
+    Equation (int amountOfTimeSteps, int amountOfGridPoints, bool createULN = false);
+    
+    // OPERATORS //
     
     Equation operator* (double val) {
         
-        for(int i = 0; i < uCoeffs.size(); ++i)
-        {
-            uNextCoeffs[i] *= val;
-            uCoeffs[i] *= val;
-            uPrevCoeffs[i] *= val;
-        }
+        for (int i = 0; i < uCoeffs.size(); ++i)
+            for (int j = 0; j < uCoeffs[i].size(); ++j )
+                uCoeffs[i][j] *= val;
         return *this;
     };
     
     Equation operator/ (double val) {
         
-        for(int i = 0; i < uCoeffs.size(); ++i)
-        {
-            uNextCoeffs[i] /= val;
-            uCoeffs[i] /= val;
-            uPrevCoeffs[i] /= val;
-        }
+        for (int i = 0; i < uCoeffs.size(); ++i)
+            for (int j = 0; j < uCoeffs[i].size(); ++j )
+                uCoeffs[i][j] /= val;
+        
         return *this;
     };
     
@@ -95,12 +93,10 @@ public:
         if (!checkOperation(eq))
             return *this;
         
-        for(int i = 0; i < uCoeffs.size(); ++i)
-        {
-            uNextCoeffs[i] += eq.getUNextCoeffs()[i];
-            uCoeffs[i] += eq.getUCoeffs()[i];
-            uPrevCoeffs[i] += eq.getUPrevCoeffs()[i];
-        }
+        for (int i = 0; i < uCoeffs.size(); ++i)
+            for (int j = 0; j < uCoeffs[i].size(); ++j )
+                uCoeffs[i][j] += eq.getUCoeffs(i)[j];
+        
         return *this;
     };
     
@@ -109,36 +105,36 @@ public:
         if (!checkOperation(eq))
             return *this;
         
-        for(int i = 0; i < uCoeffs.size(); ++i)
-        {
-            uNextCoeffs[i] -= eq.getUNextCoeffs()[i];
-            uCoeffs[i] -= eq.getUCoeffs()[i];
-            uPrevCoeffs[i] -= eq.getUPrevCoeffs()[i];
-        }
+        for (int i = 0; i < uCoeffs.size(); ++i)
+            for (int j = 0; j < uCoeffs[i].size(); ++j)
+                uCoeffs[i][j] -= eq.getUCoeffs(i)[j];
         return *this;
     };
+    
+    double* operator[] (int idx)
+    {
+        return getUCoeffs (idx);
+    };
+    
     
     bool check(int idx);
     
     bool checkOperation (Equation& eq);
     
-//    int getCoeffsSize() { return static_cast<int> (uCoeffs.size()); };
+    double* getUCoeffs (int timeIdx) { return &uCoeffs[timeIdx][0]; };
     
-    double* getUNextCoeffs() { return &uNextCoeffs[0]; };
-    double* getUCoeffs() { return &uCoeffs[0]; };
-    double* getUPrevCoeffs() { return &uPrevCoeffs[0]; };
+    double getUCoeffAt (int timeIdx, int spaceIdx) { return uCoeffs[timeIdx][spaceIdx]; }
     
     void showStencil();
     
-    int getStencilWidth() { return static_cast<int> (uCoeffs.size()); };
-    
+    int getStencilWidth() { return static_cast<int> (uCoeffs[0].size()); };
+    int getTimeSteps() { return static_cast<int> (uCoeffs.size()); };
     int getNumPoints() { return N; };
     void setNumPointsFromGridSpacing (double h) { N = floor(1.0/h); };
     
 private:
-    std::vector<double> uNextCoeffs;
-    std::vector<double> uCoeffs;
-    std::vector<double> uPrevCoeffs;
+    
+    std::vector<std::vector<double>> uCoeffs;
     
     int N = 0;
 };

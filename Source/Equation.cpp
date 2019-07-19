@@ -10,29 +10,32 @@
 
 #include "Equation.h"
 
-Equation::Equation(int max, bool createULN)
+Equation::Equation (int amountOfTimeSteps, int amountOfGridPoints, bool createULN)
 {
-    uNextCoeffs.resize(max);
-    uCoeffs.resize(max);
-    uPrevCoeffs.resize(max);
+    uCoeffs.resize (amountOfTimeSteps);
+    std::vector<double> uTmp (amountOfGridPoints, 0);
+    for (int i = 0; i < amountOfTimeSteps; ++i)
+        uCoeffs[i] = uTmp;
     
     if (createULN)
     {
-        int idx = (max - 1) / 2.0;
-        uCoeffs[idx] = 1;
+        int timeIdx = (amountOfTimeSteps - 1) / 2.0;
+        int spaceIdx = (amountOfGridPoints - 1) / 2.0;
+        
+        uCoeffs[timeIdx][spaceIdx] = 1;
     }
 }
 
 bool Equation::check (int idx)
 {
-    if (uNextCoeffs[idx] != 0 ||
-        uCoeffs[idx] != 0 ||
-        uPrevCoeffs[idx] != 0)
-    {
-        std::cout << "Size of the uCoeffs vector is incorect: " << std::endl;
-        std::cout << "Index " << idx << " should be 0." << std::endl;
-        return false;
-    }
+//    if (uNextCoeffs[idx] != 0 ||
+//        uCoeffs[idx] != 0 ||
+//        uPrevCoeffs[idx] != 0)
+//    {
+//        std::cout << "Size of the uCoeffs vector is incorect: " << std::endl;
+//        std::cout << "Index " << idx << " should be 0." << std::endl;
+//        return false;
+//    }
     return true;
 }
 
@@ -48,15 +51,11 @@ bool Equation::checkOperation (Equation& eq)
 
 void Equation::showStencil()
 {
-    for (int i = 0; i < getStencilWidth(); ++i)
-        std::cout << uNextCoeffs[i] << " ";
-    std::cout << std::endl;
+    for (int i = 0; i < uCoeffs.size(); ++i)
+    {
+        for (int j = 0; j < getStencilWidth(); ++j)
+            std::cout << uCoeffs[i][j] << " ";
+        std::cout << std::endl;
+    }
     
-    for (int i = 0; i < getStencilWidth(); ++i)
-        std::cout << uCoeffs[i] << " ";
-    std::cout << std::endl;
-    
-    for (int i = 0; i < getStencilWidth(); ++i)
-        std::cout << uPrevCoeffs[i] << " ";
-    std::cout << std::endl;
 }

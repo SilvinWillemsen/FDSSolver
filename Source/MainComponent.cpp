@@ -15,6 +15,7 @@ MainComponent::MainComponent()
     buttons.add (new TextButton("createPM"));
     createPM = buttons[0];
     createPM->setButtonText("Create");
+    createPM->addShortcut (KeyPress (KeyPress::returnKey));
     
     buttons.add (new TextButton("clearEq"));
     clearEq = buttons[1];
@@ -151,6 +152,7 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
     for (int i = 0; i < bufferSize; ++i)
     {
         float output = 0.0;
+        // for all objects, run their schemes
         for (auto object : objects)
         {
             object->excite();
@@ -160,10 +162,10 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
         }
         channelData1[i] = clip(output);
         channelData2[i] = clip(output);
-//        std::cout << output << std::endl;
-        //        std::cout <<"Buffer sample " << i << ": " <<  output << std::endl;
     }
-    // for all objects, run their schemes
+    for (auto object : objects)
+        if (object->needsToBeZero())
+            object->setZero();
 }
 
 void MainComponent::releaseResources()
@@ -216,7 +218,6 @@ void MainComponent::resized()
     buttonRow.removeFromLeft(GUIDefines::margin);
     clearEq->setBounds(buttonRow.removeFromLeft(topButtonWidth));
     
-    
     for (int i = startOfOperators; i < buttons.size(); ++i)
     {
         if ((i - startOfOperators) % 4 == 0)
@@ -262,7 +263,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     equation = object->getEquationString();
                     createPM->setButtonText ("Edit");
                     editingObject = object;
-                    editingObject->setZero();
+                    editingObject->setZeroFlag();
                     appState = editObjectState;
                     break;
                     
@@ -287,7 +288,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                     
                 case editCoeff:
-                    coeffPopupState = editingCoeff;
+                    addCoeffWindow->setCoeffState (editingCoeff);
                     addCoeffWindow->setCoeffName (coefficientComponent->getName());
                     buttonClicked (coeff);
                     break;
@@ -310,46 +311,71 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
     refresh();
 }
 
+void MainComponent::createPhysicalModel ()
+{
+    int amountOfTimeSteps = fdsSolver->getStencilWidth (equation, false);
+    int stencilWidth = fdsSolver->getStencilWidth (equation, true);
+    Equation eq (amountOfTimeSteps, stencilWidth);
+    
+    Array<var> coefficientTermIndex;
+    if (fdsSolver->solve (equation, eq, &coefficients, coefficientTermIndex))
+    {
+        if (appState == normalAppState)
+            objects.add (new Object1D (equation, eq, fdsSolver->calculateGridSpacing (eq, static_cast<double>(coefficients.getValueAt(0)))));
+        else if (appState == editObjectState)
+            objects.set (objects.indexOf (editingObject), new Object1D (equation, eq, fdsSolver->calculateGridSpacing (eq, static_cast<double>(coefficients.getValueAt(0)))));
+        
+        Object1D* newObject = objects[objects.size() - 1];
+        newObject->setCoefficients (&coefficients);
+        newObject->addChangeListener (this);
+        newObject->setCoefficientTermIndex (coefficientTermIndex);
+        newObject->refreshCoefficients();
+        addAndMakeVisible (newObject);
+
+    }
+}
+
+void MainComponent::editPhysicalModel()
+{
+//    if (equation != editingObject->getEquationString())
+//    {
+    createPhysicalModel();
+//    } else {
+//        editingObject->setCoefficients (&coefficients);
+//        editingObject->refreshCoefficients();
+//    }
+//    objects.set (objects.indexOf (editingObject), new Object1D (equation, fdsSolver->getStencil (eq), eq.getNumPoints()));
+    editingObject = nullptr;
+    createPM->setButtonText ("Create");
+    appState = normalAppState;
+}
+    
 void MainComponent::buttonClicked (Button* button)
 {
+    
+    // Linking the return key to the createPM button
+    KeyPress key = KeyPress (KeyPress::returnKey);
+    if (key.KeyPress::isCurrentlyDown())
+    {
+        if (button == createPM && !createPMalreadyClicked)
+            createPMalreadyClicked = true;
+        else if (button != createPM)
+        {
+            button->setState (Button::ButtonState::buttonNormal);
+            return;
+        }
+    }
+
     if (button == clearEq)
-    {;
+    {
         equation = "";
     }
     else if (button == createPM)
     {
-        int stencilwidth = fdsSolver->getStencilWidth (equation);
-        eq = new Equation (stencilwidth);
-        std::vector<double> coeffs (coefficients.size(), 0);
-        for (int i = 0; i < coefficients.size(); ++i)
-        {
-            coeffs[i] = coefficients.getValueAt (i);
-        }
-        
-        fdsSolver->setCoeffValues (&coefficients);
-        if (fdsSolver->solve (equation, eq))
-        {
-//            equation = "";
-            int objectIdx = -1;
-            if (appState == normalAppState)
-            {
-                objects.add (new Object1D (equation, fdsSolver->getStencil (eq), &coefficients, eq->getNumPoints()));
-                objectIdx = objects.size() - 1;
-            }
-            else if (appState == editObjectState)
-            {
-                objectIdx = objects.indexOf (editingObject);
-                objects.set (objects.indexOf (editingObject), new Object1D (equation, fdsSolver->getStencil (eq), &coefficients, eq->getNumPoints()));
-                createPM->setButtonText ("Create");
-                appState = normalAppState;
-            }
-            Object1D* newObject = objects[objectIdx];
-            newObject->addChangeListener (this);
-            newObject->setCoefficientTermIndex (fdsSolver->getCoeffTermIndex());
-            newObject->refreshCoefficients();
-            addAndMakeVisible (newObject);
-            std::cout << eq->getNumPoints() << std::endl;
-        }
+        if (createPMalreadyClicked)
+            return;
+        std::cout << "createPMclicked" << std::endl;
+        appState == normalAppState ? createPhysicalModel() : editPhysicalModel();
         resized();
     }
     
@@ -359,7 +385,7 @@ void MainComponent::buttonClicked (Button* button)
         DialogWindow::LaunchOptions dlg;
         dlg.dialogTitle = TRANS(coeffPopupState == normalCoeffState ? "Add Coefficient" : "Edit Coefficient");
         dlg.content.set (addCoeffWindow, false);
-        addCoeffWindow->setKeyboardFocus (true, coeffPopupState == normalCoeffState ? 0 : 1);
+        addCoeffWindow->setKeyboardFocus();
         
         if (dlg.runModal() == 1)
         {
@@ -389,7 +415,7 @@ void MainComponent::buttonClicked (Button* button)
                 }
                 equation = equation + coeffName + "_";
             } else {
-                coeffPopupState = normalCoeffState;
+                addCoeffWindow->setCoeffState(normalCoeffState);
             }
             
             resized();
@@ -634,7 +660,7 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
         if (buttonToClick != nullptr && buttonToClick->isEnabled())
             buttonClicked (buttonToClick);
     }
-    else
+    else if (CharacterFunctions::isLetter (key.getTextCharacter()) && coeff->isEnabled())
     {
         String keyString;
         keyString += (juce_wchar) key.getKeyCode();
@@ -652,4 +678,18 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
         buttonClicked (coeff);
     }
     return true;
+}
+
+// Linking the return key to the createPM button
+bool MainComponent::keyStateChanged (bool isKeyDown, Component* originatingComponent)
+{
+    KeyPress key = KeyPress (KeyPress::returnKey);
+    if (key.KeyPress::isCurrentlyDown())
+    {
+        returnKeyIsDown = true;
+    }
+    else if (returnKeyIsDown) // this means that the return key is released
+    {
+        createPMalreadyClicked = false;
+    }
 }
