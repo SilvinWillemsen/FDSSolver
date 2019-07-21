@@ -37,14 +37,14 @@ public:
     
     Action getAction() { return action; }
     
-    String& getName() { return name; };
-    
     double getSliderValue() { return slider.getValue(); };
-    
+    double getValue() { return value; };
     void clickCoeffButton() { buttonClicked (&coefficientButton); };
     
+    void setApplicationState (ApplicationState applicationState);
+    
 private:
-    String name;
+//    String name;
     double value;
     
     TextButton coefficientButton;
@@ -53,9 +53,13 @@ private:
 
     Slider slider;
     Label label;
+    Label dynamicCoeffLabel;
+    
     bool dynamic = false;
     
     Action action = noAction;
     
+    ApplicationState appState;
+//     Coefficient coeff (const String& name, double value, bool dynamic)
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CoefficientComponent)
 };

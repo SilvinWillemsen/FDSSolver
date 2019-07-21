@@ -13,7 +13,7 @@
 
 //==============================================================================
 
-FDSsolver::FDSsolver(double k) : k (k)
+FDSsolver::FDSsolver (CoefficientList* coefficientList, double k) : coefficientList (coefficientList), k (k)
 {
     // In your constructor, you should add any child components, and
     // initialise any special settings that your component needs.
@@ -212,12 +212,6 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
         }
     }
     
-    // DEBUG
-//    for (auto term : terms)
-//    {
-//        term.showStencil();
-//    }
-    
     for (int i = 0; i < terms.size(); ++i)
     {
         int operatorMult = 1;
@@ -250,6 +244,20 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
     
     eq.showStencil();
     return true;
+}
+
+StringArray FDSsolver::getUsedCoeffs (String& equationString)
+{
+    StringArray tokens;
+    tokens.addTokens (equationString, "_", "\"");
+    tokens.remove (tokens.size() - 1);
+    
+    StringArray usedCoeffs;
+    for (auto token : tokens)
+        if (!std::isdigit (*static_cast<const char*> (token.substring(0, 1).toUTF8())))
+            usedCoeffs.add (token.upToFirstOccurrenceOf("-", false, true));
+    
+    return usedCoeffs;
 }
 
 double FDSsolver::calculateGridSpacing (Equation& eq, double coeff)
@@ -295,8 +303,21 @@ bool FDSsolver::checkAllowedCharacters (int prevTermType, StringArray& tokens, b
         
         const char* test = static_cast<const char*> (firstChar.toUTF8());
         
-        int firstInt = std::isdigit(*test) ? firstChar.getIntValue() : 9;
-
+        int firstInt;
+        
+        if (std::isdigit(*test))
+        {
+            firstInt = firstChar.getIntValue();
+        } else {
+            String coeff = tokens[i].upToFirstOccurrenceOf ("-", false, true);
+            if (!checkIfCoefficientExists (coeff))
+            {
+                std::cout << coeff << " was deleted. Please remove " << coeff << " from the equation." << std::endl;
+                return false;
+            }
+            firstInt = 9;
+        }
+        
         if (i == tokens.size() - 1 && firstInt != 3)
         {
             std::cout << "FDS doesn't end in u" << std::endl;
@@ -332,7 +353,7 @@ bool FDSsolver::checkAllowedCharacters (int prevTermType, StringArray& tokens, b
             return false;
         }
         // set the type of the previous character
-        prevTermType = firstChar.getIntValue();
+        prevTermType = firstInt;
     }
     return true;
 }
@@ -532,4 +553,12 @@ int FDSsolver::getStencilWidth (String& equationString, bool checkSpace)
     }
     
     return stencilSize;
+}
+
+bool FDSsolver::checkIfCoefficientExists (String& coeff)
+{
+    for (auto coefficient : coefficientList->getCoefficients())
+        if (coefficient->getName() == coeff)
+            return true;
+    return false;
 }

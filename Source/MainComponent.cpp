@@ -12,18 +12,25 @@
 MainComponent::MainComponent()
 {
     calculator = new Calculator();
+    calculator->addChangeListener (this);
     addAndMakeVisible (calculator);
+    calculator->getButton("createPM")->addShortcut (KeyPress (KeyPress::returnKey));
+    
     addCoeffWindow = new AddCoefficient();
     
-    coeffTopLabel = new Label();
-    coeffTopLabel->setColour (Label::textColourId, Colours::white);
-    coeffTopLabel->setText ("Coefficients", dontSendNotification);
-    coeffTopLabel->setFont (Font (16.0f));
-    addAndMakeVisible (coeffTopLabel);
+//    coefficientList = new CoefficientList();
+    addAndMakeVisible (coefficientList);
 
-    addKeyListener (this);
-    setSize (800, 600);
+    newButton = new TextButton();
+    newButton->setButtonText("New Model");
+    newButton->addListener (this);
+    addAndMakeVisible (newButton);
     
+    addKeyListener (this);
+    
+    changeAppState (normalAppState);
+    setSize (800, 600);
+
     // specify the number of input and output channels that we want to open
     setAudioChannels (2, 2);
 }
@@ -47,7 +54,7 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
     // For more details, see the help for AudioProcessor::prepareToPlay()
     fs = sampleRate;
     bufferSize = samplesPerBlockExpected;
-    fdsSolver = new FDSsolver (GUIDefines::debug ? 1.0 : 1.0 / fs);// / fs);
+    fdsSolver = new FDSsolver (&coefficientList, GUIDefines::debug ? 1.0 : 1.0 / fs);// / fs);
     Timer::startTimerHz (120);
 //    equation =
     refresh();
@@ -93,51 +100,35 @@ void MainComponent::paint (Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
-
-    // You can add your drawing code here!
+    
 }
 
 void MainComponent::resized()
 {
-    // This is called when the MainContentComponent is resized.
-    // If you add any child components, this is where you should
-    // update their positions.
-
     Rectangle<int> totArea = getLocalBounds();
 
     totArea.removeFromTop(GUIDefines::margin);
     totArea.removeFromLeft(GUIDefines::margin);
     totArea.removeFromRight(GUIDefines::margin);
     
-    calculator->setBounds(totArea.removeFromTop (200));
+    calculator->setBounds(totArea.removeFromTop (GUIDefines::calculatorHeight));
     
-    // draw objects
+    // Draw objects (physical models)
+    Rectangle<int> objectArea = getLocalBounds();
+    objectArea.removeFromLeft (GUIDefines::margin);
+    objectArea.removeFromTop (GUIDefines::buttonHeight + 2 * GUIDefines::margin);
+    objectArea.removeFromRight (GUIDefines::buttonAreaWidth + GUIDefines::margin);
     for (int i = 0; i < objects.size(); ++i)
     {
-        objects[i]->setBounds(totArea.removeFromTop(100));
+        objects[i]->setBounds(objectArea.removeFromTop(100));
     }
-    
-    Rectangle<int> buttonArea = totArea.removeFromRight (GUIDefines::buttonAreaWidth);
-    buttonArea.removeFromTop(GUIDefines::margin);
+    Rectangle<int> coefficientArea = totArea.removeFromRight (GUIDefines::buttonAreaWidth - GUIDefines::margin);
+    coefficientArea.removeFromTop (GUIDefines::margin);
     
     // Draw Coefficients
+    coefficientList.setBounds (coefficientArea);
     
-    if (coefficientComponents.size() != 0)
-    {
-        coeffTopLabel->setVisible (true);
-        buttonArea.removeFromTop (GUIDefines::margin);
-        coeffTopLabel->setBounds (buttonArea.removeFromTop (GUIDefines::buttonHeight));
-        buttonArea.removeFromTop (GUIDefines::margin);
-    } else {
-        coeffTopLabel->setVisible (false);
-    }
-
-    for (int i = 0; i < coefficientComponents.size(); ++i)
-    {
-        coefficientComponents[i]->setBounds(buttonArea.removeFromTop(GUIDefines::buttonHeight));
-        buttonArea.removeFromTop(GUIDefines::margin);
-    }
-
+    newButton->setBounds (GUIDefines::margin, getHeight() - GUIDefines::margin - GUIDefines::buttonHeight, 100, GUIDefines::buttonHeight);
 }
 
 void MainComponent::addCoefficient()
@@ -155,19 +146,19 @@ void MainComponent::addCoefficient()
         bool isDynamic = addCoeffWindow->isDynamic();
         
         // if the coefficient already exists
-        if (coefficients.contains (coeffName))
+        int coeffIndex = coefficientList.containsCoefficient (coeffName);
+        if (coeffIndex >= 0)
         {
-            int coeffIndex = coefficients.indexOf (coeffName);
-            coefficientComponents[coeffIndex]->update(isDynamic, value);
+            coefficientList.getCoefficients()[coeffIndex]->update (isDynamic, value);
         } else {
-            coefficientComponents.add (new CoefficientComponent (coeffName, value, isDynamic));
-            coefficientComponents[coefficientComponents.size() - 1]->addChangeListener (this);
-            addAndMakeVisible (coefficientComponents[coefficientComponents.size() - 1]);
+            std::shared_ptr<CoefficientComponent> newCoeff = coefficientList.addCoefficient (coeffName, value, isDynamic);
+            newCoeff.get()->addChangeListener (this);
+            coefficientList.repaintAndUpdate();
         }
-        
+
         coefficients.set (coeffName, value);
         
-        if (addCoeffWindow->getCoeffPopupState() == normalCoeffState)
+        if (addCoeffWindow->getCoeffPopupState() == normalCoeffState && calculator->getButton ("900")->isEnabled())
         {
             int lim = 3 - coeffName.length();
             for (int i = 0; i < lim; ++i)
@@ -205,6 +196,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
         return;
     }
     
+    // if (source == instrument)
     for (auto object : objects)
     {
         if (source == object)
@@ -215,11 +207,18 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     calculator->getButton ("createPM")->setButtonText ("Edit");
                     editingObject = object;
                     editingObject->setZeroFlag();
-                    appState = editObjectState;
+                    changeAppState (editObjectState);
                     break;
                     
                 case removeObject:
                     objects.removeObject (object);
+                    coefficientList.emptyCoefficientList();
+                    break;
+                    
+                case objectClicked:
+                    calculator->setEquationString (object->getEquationString());
+                    repaint();
+                    coefficientList.loadCoefficientsFromObject (object->getCoefficientComponents());
                     break;
                 
                 default:
@@ -228,9 +227,10 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
         }
     }
     
-    for (auto coefficientComponent : coefficientComponents)
+    // if (source == coefficientList)
+    for (auto coefficientComponent : coefficientList.getCoefficients())
     {
-        if (source == coefficientComponent)
+        if (source == coefficientComponent.get())
         {
             String name = coefficientComponent->getName();
             switch (coefficientComponent->getAction()) {
@@ -241,17 +241,19 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                 case editCoeff:
                     addCoeffWindow->setCoeffPopupState (editingCoeff);
                     addCoeffWindow->setCoeffName (coefficientComponent->getName());
-                    calculator->clickButton ("coeff");
+                    addCoefficient();
                     break;
                     
                 case removeCoeff:
-                    coefficientComponents.removeObject(coefficientComponent);
+                    coefficientList.removeCoefficient (coefficientComponent);
+                    
+                    // remove coefficient values from object
                     coefficients.remove (coefficientComponent->getName());
+                    coefficientList.repaintAndUpdate();
                     break;
                     
                 case sliderMoved:
                     coefficients.set (name, coefficientComponent->getSliderValue());
-                    std::cout << coefficients.getVarPointer (name)->toString() << std::endl;
                     break;
                     
                 default:
@@ -262,7 +264,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
     refresh();
 }
 
-void MainComponent::createPhysicalModel()
+bool MainComponent::createPhysicalModel()
 {
     String equationString = calculator->getEquationString();
     int amountOfTimeSteps = fdsSolver->getStencilWidth (equationString, false);
@@ -272,32 +274,69 @@ void MainComponent::createPhysicalModel()
     Array<var> coefficientTermIndex;
     if (fdsSolver->solve (equationString, eq, &coefficients, coefficientTermIndex))
     {
-        if (appState == normalAppState)
+        if (appState != editObjectState)
             objects.add (new Object1D (equationString, eq, fdsSolver->calculateGridSpacing (eq, static_cast<double>(coefficients.getValueAt(0)))));
-        else if (appState == editObjectState)
-            objects.set (objects.indexOf (editingObject), new Object1D (equationString, eq, fdsSolver->calculateGridSpacing (eq, static_cast<double>(coefficients.getValueAt(0)))));
+        else
+            objects.set (objects.indexOf (editingObject), new Object1D (equationString, eq, fdsSolver->calculateGridSpacing (eq, static_cast<double> (coefficients.getValueAt(0)))));
         
         Object1D* newObject = objects[objects.size() - 1];
-        newObject->setCoefficients (&coefficients);
+        
+        // only add the coefficients that are actually used by the newly created object
+        StringArray usedCoeffs = fdsSolver->getUsedCoeffs (equationString);
+        NamedValueSet currentCoefficients = coefficientList.getNamedValueSet (usedCoeffs);
+        newObject->setCoefficients (currentCoefficients);
+        
+        for (auto coeffComp : coefficientList.getCoefficients())
+            if (currentCoefficients.contains(coeffComp.get()->getName()))
+                newObject->setCoefficientComponent (coeffComp);
+        
         newObject->addChangeListener (this);
         newObject->setCoefficientTermIndex (coefficientTermIndex);
         newObject->refreshCoefficients();
         addAndMakeVisible (newObject);
-
+    
+        changeAppState (normalAppState);
+    } else {
+        return false;
     }
+    
+    return true;
 }
 
-void MainComponent::editPhysicalModel()
+bool MainComponent::editPhysicalModel()
 {
-    createPhysicalModel();
+    if (!createPhysicalModel())
+        return false;
     editingObject = nullptr;
     calculator->getButton("createPM")->setButtonText ("Create");
     appState = normalAppState;
+    
+    return true;
 }
     
 void MainComponent::buttonClicked (Button* button)
 {
-    refresh();
+    KeyPress key = KeyPress (KeyPress::returnKey);
+    if (key.KeyPress::isCurrentlyDown())
+    {
+        button->setState (Button::ButtonState::buttonNormal);
+        return;
+    }
+    
+    if (button == newButton)
+    {
+        if (appState == normalAppState)
+        {
+            changeAppState (newObjectState);
+            newButton->setButtonText ("CANCEL");
+        }
+        else if (appState == newObjectState) // new model has been cancelled
+        {
+            coefficientList.emptyCoefficientList();
+            changeAppState (normalAppState);
+            newButton->setButtonText ("New Model");
+        }
+    }
 }
 
 void MainComponent::sliderValueChanged (Slider* slider)
@@ -347,8 +386,11 @@ double MainComponent::clip (double output, double min, double max)
 bool MainComponent::keyPressed (const KeyPress& key, Component* originatingComponent)
 {
     String buttonToClick;
+    if (appState == normalAppState)
+        return false;
     
-    if (!(ModifierKeys::getCurrentModifiers() == ModifierKeys::shiftModifier))
+    // if not a capital letter
+    if (!(ModifierKeys::getCurrentModifiers() == ModifierKeys::shiftModifier && CharacterFunctions::isLetter (key.getTextCharacter())))
     {
         switch (key.getTextCharacter())
         {
@@ -362,7 +404,11 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
                 buttonToClick = StringCode::getEncoded()[1];
                 break;
             case '-':
-                buttonToClick = StringCode::getEncoded()[2];
+                //assuming that either the "-" or "(-)" is enabled
+                if (calculator->getButton("102")->isEnabled())
+                    buttonToClick = StringCode::getEncoded()[2];
+                else
+                    buttonToClick = StringCode::getEncoded()[12];
                 break;
             case 'g':
                 buttonToClick = StringCode::getEncoded()[3];
@@ -403,19 +449,26 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
             if (calculator->getButton (buttonToClick)->isEnabled())
                 calculator->buttonClicked (calculator->getButton (buttonToClick));
     }
-    else if (CharacterFunctions::isLetter (key.getTextCharacter()) && calculator->getButton ("900")->isEnabled())
+    else
     {
         String keyString;
         keyString += (juce_wchar) key.getKeyCode();
-        //        bool alreadyCoefficient = false;
-        if (coefficients.contains (keyString))
+
+        if (coefficientList.containsCoefficient (keyString) >= 0)
         {
-            for (auto coefficientComponent : coefficientComponents)
-                if (coefficientComponent->getName() == keyString)
-                {
-                    coefficientComponent->clickCoeffButton();
-                    return true;
-                }
+            if (calculator->getButton ("900")->isEnabled())
+            {
+                for (auto coefficientComponent : coefficientList.getCoefficients())
+                    if (coefficientComponent->getName() == keyString)
+                    {
+                        coefficientComponent->clickCoeffButton();
+                        return true;
+                    }
+            } else {
+                std::cout << "Coeffbutton is disabled" << std::endl;
+                return false;
+            }
+                
         }
         addCoeffWindow->setCoeffName (keyString);
         addCoefficient();
@@ -423,7 +476,10 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
     return true;
 }
 
-int MainComponent::testFunc(int test)
+void MainComponent::changeAppState (ApplicationState applicationState)
 {
-    return test;
+    coefficientList.setApplicationState (applicationState);
+    calculator->setApplicationState (applicationState);
+    appState = applicationState;
 }
+

@@ -76,6 +76,14 @@ enum Action
     sliderMoved,
     editObject,
     removeObject,
+    objectClicked,
+};
+
+enum ApplicationState
+{
+    normalAppState,
+    newObjectState,
+    editObjectState,
 };
 
 class GUIDefines
@@ -85,8 +93,10 @@ public:
     static const int buttonHeight = 30;
     static const int buttonAreaWidth = 250;
     static const int buttonWidth = (buttonAreaWidth - margin * 4) / 4.0;
-    
+    static const int calculatorHeight = 200;
     static const bool debug = false;
     constexpr static const double horStateArea = 0.9;
+    
+    static const int listBoxRowHeight = 40;
 
 };

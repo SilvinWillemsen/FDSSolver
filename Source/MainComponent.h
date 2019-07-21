@@ -11,7 +11,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GUIDefines.h"
 #include "Calculator.h"
-#include "CoefficientComponent.h"
+#include "CoefficientList.h"
 #include "FDSsolver.h"
 #include "AddCoefficient.h"
 #include "Object1D.h"
@@ -21,11 +21,6 @@
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
-enum ApplicationState
-{
-    normalAppState,
-    editObjectState,
-};
 
 class MainComponent   : public AudioAppComponent,
                         public Button::Listener,
@@ -52,8 +47,8 @@ public:
     void buttonClicked (Button* button) override;
     void sliderValueChanged (Slider* slider) override;
     
-    void createPhysicalModel();
-    void editPhysicalModel();
+    bool createPhysicalModel();
+    bool editPhysicalModel();
     
     void addCoefficient();
     
@@ -63,12 +58,12 @@ public:
     double clip (double output, double min = -1.0, double max = 1.0);
     
     bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
-    
-    int testFunc (int test);
+
+    void changeAppState (ApplicationState applicationState);
 private:
     //==============================================================================
     // Your private member variables go here...
-    Calculator* calculator;
+    ScopedPointer<Calculator> calculator;
     
     ScopedPointer<FDSsolver> fdsSolver = nullptr;
     ScopedPointer<Equation> eq = nullptr;
@@ -80,9 +75,8 @@ private:
 
     ScopedPointer<AddCoefficient> addCoeffWindow;
     
-    OwnedArray<CoefficientComponent> coefficientComponents;
-    
-    ScopedPointer<Label> coeffTopLabel;
+    CoefficientList coefficientList;
+
     OwnedArray<Label> coeffLabels;
     std::vector<bool> coeffDynamic;
 
@@ -90,11 +84,13 @@ private:
     
     OwnedArray<Object1D> objects;
     
-    ApplicationState appState = normalAppState;
+    ApplicationState appState;
     CoeffPopupState coeffPopupState = normalCoeffState;
     
     Object1D* editingObject = nullptr;
     bool repaintFlag = false;
+    
+    ScopedPointer<TextButton> newButton;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

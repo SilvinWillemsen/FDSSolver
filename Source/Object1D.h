@@ -13,6 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GUIDefines.h"
 #include "Equation.h"
+#include "CoefficientComponent.h"
 //==============================================================================
 /*
 */
@@ -47,7 +48,15 @@ public:
     void mouseDown (const MouseEvent& e) override;
     
     void setCoefficient (String name, double value) { coefficients.set(name, value); };
-    void setCoefficients (NamedValueSet* coeffs) { for (int i = 0; i < coeffs->size(); ++i) coefficients.set (coeffs->getName (i), coeffs->getValueAt (i)); };
+    void setCoefficients (NamedValueSet& coeffs) {
+        for (int i = 0; i < coeffs.size(); ++i)
+        {
+            String name = coeffs.getName (i).toString();
+            var val = coeffs.getValueAt (i);
+//            coefficients.set (coeffs.getName (i), coeffs.getValueAt (i));
+            coefficients.set (name, val);
+        }
+    };
     NamedValueSet* getCoefficientPtr() { return &coefficients; };
     
     void setCoefficientTermIndex (Array<var>& varray) { coefficientTermIndex = varray; };
@@ -61,6 +70,10 @@ public:
     void setZeroFlag() { setZFlag = true; }
     
     bool needsToBeZero() { return setZFlag; };
+    
+    void setCoefficientComponent (std::shared_ptr<CoefficientComponent> coeffComp) { coefficientComponents.push_back (coeffComp); };
+    std::vector<std::shared_ptr<CoefficientComponent>>& getCoefficientComponents() { return coefficientComponents; };
+    
 private:
     String equationString;
     
@@ -91,5 +104,8 @@ private:
     Action action = noAction;
     
     bool setZFlag = false;
+    
+    std::vector<std::shared_ptr<CoefficientComponent>> coefficientComponents;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object1D)
 };

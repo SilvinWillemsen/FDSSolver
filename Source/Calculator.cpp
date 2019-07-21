@@ -27,7 +27,6 @@ Calculator::Calculator()
     buttons.add (new TextButton("createPM"));
     createPM = buttons[0];
     createPM->setButtonText("Create");
-    createPM->addShortcut (KeyPress (KeyPress::returnKey));
     
     buttons.add (new TextButton("clearEq"));
     clearEq = buttons[1];
@@ -106,6 +105,8 @@ Calculator::Calculator()
         addAndMakeVisible (button);
     }
 
+    addKeyListener (this);
+    
 }
 
 Calculator::~Calculator()
@@ -129,16 +130,16 @@ void Calculator::resized()
     Rectangle<int> totArea = getLocalBounds();
     Rectangle<int> buttonArea = totArea.removeFromRight (GUIDefines::buttonAreaWidth);
     buttonArea.removeFromLeft (GUIDefines::margin);
-    textBox->setBounds(totArea.removeFromTop(GUIDefines::buttonHeight));
+    textBox->setBounds (totArea.removeFromTop(GUIDefines::buttonHeight));
     
     int topButtonWidth = (buttonArea.getWidth() - GUIDefines::margin) / 2.0;
     
     Rectangle<int> buttonRow;
-    buttonRow = buttonArea.removeFromTop(GUIDefines::buttonHeight);
+    buttonRow = buttonArea.removeFromTop (GUIDefines::buttonHeight);
     
-    createPM->setBounds (buttonRow.removeFromLeft(topButtonWidth));
-    buttonRow.removeFromLeft(GUIDefines::margin);
-    clearEq->setBounds(buttonRow.removeFromLeft(topButtonWidth));
+    createPM->setBounds (buttonRow.removeFromLeft (topButtonWidth));
+    buttonRow.removeFromLeft (GUIDefines::margin);
+    clearEq->setBounds (buttonRow.removeFromLeft (topButtonWidth));
     
     for (int i = startOfOperators; i < buttons.size(); ++i)
     {
@@ -172,7 +173,7 @@ void Calculator::buttonClicked (Button* button)
     
     if (button == clearEq)
     {
-        equationString = "";
+        clearEquation();
     }
     
     else if (button == createPM)
@@ -251,6 +252,8 @@ bool Calculator::refresh()
             notAllowedCharacters.push_back(9);
             break;
         case 9:
+            if (equationString.substring(equationString.length() - 4, equationString.length() - 1) == "901")
+                notAllowedCharacters.push_back(1);
             break;
     }
     
@@ -355,4 +358,21 @@ String Calculator::decoder (String string)
     }
     
     return returnString;
+}
+
+void Calculator::setApplicationState (ApplicationState state)
+{
+    switch (state) {
+        case normalAppState:
+            setEnabled (false);
+            clearEquation();
+            break;
+        case newObjectState:
+        case editObjectState:
+            setEnabled (true);
+            break;
+        default:
+            break;
+    }
+    appState = state;
 }

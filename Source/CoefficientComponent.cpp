@@ -12,35 +12,40 @@
 #include "CoefficientComponent.h"
 
 //==============================================================================
-CoefficientComponent::CoefficientComponent (const String& name, double val, bool dyn) : name (name),
-                                                                                        value (val),
-                                                                                        slider(Slider::LinearHorizontal, Slider::NoTextBox),
-                                                                                        dynamic (dyn)
+CoefficientComponent::CoefficientComponent (const String& name, double val, bool dyn) : value (val),
+                                                                            slider(Slider::LinearHorizontal, Slider::NoTextBox),
+                                                                            dynamic (dyn)
 {
+    this->setName (name);
     // slider
     slider.setName (name);
     slider.setPopupDisplayEnabled (true, true, getParentComponent(), -1);
     slider.addListener (this);
     addAndMakeVisible (slider);
-    
-    // label
+
+    // labels
     label.setFont (Font("Latin Modern Math", "Regular", 16.0));
     label.setColour (Label::textColourId, Colours::white);
     addAndMakeVisible (label);
+
+    dynamicCoeffLabel.setFont (Font("Latin Modern Math", "Regular", 16.0));
+    dynamicCoeffLabel.setColour (Label::textColourId, Colours::white);
+    dynamicCoeffLabel.setText(getName() + " = ", dontSendNotification);
+    addAndMakeVisible (dynamicCoeffLabel);
     
     update (dynamic, value);
-    
+
     // buttons
     coefficientButton.setName (name);
     coefficientButton.setButtonText (name);
     coefficientButton.addListener (this);
     addAndMakeVisible (coefficientButton);
-    
+
     editButton.setName (name);
     editButton.setButtonText ("E");
     editButton.addListener (this);
     addAndMakeVisible (editButton);
-    
+
     removeButton.setName (name);
     removeButton.setButtonText (String (CharPointer_UTF8 ("\xc3\x97")));
     removeButton.addListener (this);
@@ -50,6 +55,7 @@ CoefficientComponent::CoefficientComponent (const String& name, double val, bool
 
 CoefficientComponent::~CoefficientComponent()
 {
+    std::cout << getName() << " is removed from the heap." << std::endl;
 }
 
 void CoefficientComponent::paint (Graphics& g)
@@ -60,13 +66,21 @@ void CoefficientComponent::paint (Graphics& g)
 void CoefficientComponent::resized()
 {
     Rectangle<int> totalArea = getLocalBounds();
+    totalArea.reduce (GUIDefines::margin / 2.0, GUIDefines::margin / 2.0);
     
-    coefficientButton.setBounds (totalArea.removeFromLeft (GUIDefines::buttonWidth));
-    removeButton.setBounds (totalArea.removeFromRight (GUIDefines::buttonHeight));
-    totalArea.removeFromRight (GUIDefines::margin);
-    editButton.setBounds (totalArea.removeFromRight (GUIDefines::buttonHeight));
-    totalArea.removeFromLeft (GUIDefines::margin);
-    totalArea.removeFromRight (GUIDefines::margin);
+    if (appState != normalAppState)
+    {
+        coefficientButton.setBounds (totalArea.removeFromLeft (GUIDefines::buttonWidth));
+        removeButton.setBounds (totalArea.removeFromRight (GUIDefines::buttonHeight));
+        totalArea.removeFromRight (GUIDefines::margin);
+        editButton.setBounds (totalArea.removeFromRight (GUIDefines::buttonHeight));
+        totalArea.removeFromLeft (GUIDefines::margin);
+        totalArea.removeFromRight (GUIDefines::margin);
+    }
+    else if (dynamic)
+    {
+        dynamicCoeffLabel.setBounds(totalArea.removeFromLeft (GUIDefines::buttonWidth));
+    }
     
     if (dynamic)
     {
@@ -75,7 +89,7 @@ void CoefficientComponent::resized()
         label.setBounds (totalArea);
     }
     
-    totalArea.removeFromLeft (GUIDefines::margin);
+//    totalArea.removeFromLeft (GUIDefines::margin);
 }
 
 void CoefficientComponent::sliderValueChanged (Slider* slider)
@@ -119,8 +133,25 @@ void CoefficientComponent::update (bool dyn, double val)
         slider.setRange(0.0, val);
         slider.setValue (val);
     } else {
-        label.setText(" = " + String (val), dontSendNotification);
+        label.setText ((appState == normalAppState ? getName() : "") + " = " + String (val), dontSendNotification);
+    }
+    
+    if (appState == normalAppState)
+    {
+        coefficientButton.setVisible (false);
+        editButton.setVisible (false);
+        removeButton.setVisible (false);
+    } else {
+        coefficientButton.setVisible (true);
+        editButton.setVisible (true);
+        removeButton.setVisible (true);
     }
     
     resized();
+}
+
+void CoefficientComponent::setApplicationState (ApplicationState applicationState)
+{
+    appState = applicationState;
+    update (dynamic, value);
 }

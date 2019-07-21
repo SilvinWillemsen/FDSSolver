@@ -33,7 +33,7 @@ Object1D::Object1D (String equationString, Equation stencil, double h) : equatio
     // GUI STUFF
     
     editButton.setName ("Edit");
-    editButton.setButtonText ("Edit");
+    editButton.setButtonText ("E");
     editButton.addListener (this);
     addAndMakeVisible (editButton);
     
@@ -92,6 +92,7 @@ void Object1D::resized()
     buttonArea.removeFromRight (GUIDefines::margin);
     
     editButton.setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+    buttonArea.removeFromTop (GUIDefines::margin);
     removeButton.setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
 }
 
@@ -135,6 +136,8 @@ void Object1D::excite()
 }
 void Object1D::mouseDown (const MouseEvent& e)
 {
+    action = objectClicked;
+    sendChangeMessage();
     excited = true;
 }
 

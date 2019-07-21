@@ -48,15 +48,19 @@ public:
     
     ChangeMessage getChangeMessage() { return changeMessage; };
     
+    // Equation string functions
     void setEquationString (String eqString) { equationString = eqString; };
     String getEquationString() { return equationString; };
-    void addToEquation (String stringToAdd) { equationString += stringToAdd; };
+    void addToEquation (String stringToAdd) { equationString += stringToAdd; refresh(); };
+    void clearEquation() { equationString = ""; textBox->setText ("", dontSendNotification); };
     
     // Use for one character
     String encoder (String equation);
     
     // Use for multiple characters
     String decoder (String equation);
+    
+    void setApplicationState (ApplicationState state);
     
 private:
     OwnedArray<TextButton> buttons;
@@ -98,6 +102,8 @@ private:
     bool returnKeyIsDown = false;
     
     ChangeMessage changeMessage = noChangeMessage;
+    
+    ApplicationState appState;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Calculator)
 };

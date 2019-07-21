@@ -13,13 +13,14 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GUIDefines.h"
 #include "Equation.h"
+#include "CoefficientList.h"
 
 //==============================================================================
 
 class FDSsolver    : public Component
 {
 public:
-    FDSsolver (double k);
+    FDSsolver (CoefficientList* coefficientList, double k);
     ~FDSsolver();
 
     void paint (Graphics&) override;
@@ -32,6 +33,8 @@ public:
     
     bool solve (String& equationString, Equation& eq, NamedValueSet* coefficients, Array<var>& coefficientTermIndex);
     double calculateGridSpacing (Equation& eq, double coeffValue);
+    
+    StringArray getUsedCoeffs (String& equationString);
     
     // Spatial differences
     Equation& forwDiffX (Equation& equation);
@@ -57,7 +60,11 @@ public:
     std::vector<Equation> getTerms() { return terms; };
     Array<var>& getCoeffTermIndex() { return coefficientTermIndex; };
     
+    bool checkIfCoefficientExists (String& coeff);
 private:
+    
+    // pointer to list of coefficients to see whether they still exist or have been deleted
+    CoefficientList* coefficientList;
     
     int numTerms = 0;
     std::vector<Equation> terms;
