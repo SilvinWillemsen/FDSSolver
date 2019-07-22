@@ -27,7 +27,8 @@ enum BoundaryCondition
 
 class Object1D    : public Component,
                     public Button::Listener,
-                    public ChangeBroadcaster
+                    public ChangeBroadcaster,
+                    public Timer
 {
 public:
     Object1D (String equationString, Equation stencil, double h);
@@ -46,6 +47,9 @@ public:
     void excite();
     double getOutput (double ratio) { int idx = floor (N * ratio); return u[1][idx]; };
     void mouseDown (const MouseEvent& e) override;
+    void mouseMove (const MouseEvent& e) override;
+    
+    void timerCallback() override;
     
     void setCoefficient (String name, double value) { coefficients.set(name, value); };
     void setCoefficients (NamedValueSet& coeffs) {
@@ -74,6 +78,8 @@ public:
     void setCoefficientComponent (std::shared_ptr<CoefficientComponent> coeffComp) { coefficientComponents.push_back (coeffComp); };
     std::vector<std::shared_ptr<CoefficientComponent>>& getCoefficientComponents() { return coefficientComponents; };
     
+    void setApplicationState (ApplicationState applicationState);
+    
 private:
     String equationString;
     
@@ -98,8 +104,13 @@ private:
     NamedValueSet coefficients;
     Array<var> coefficientTermIndex;
     
-    TextButton removeButton;
-    TextButton editButton;
+    OwnedArray<TextButton> buttons;
+    
+    TextButton* removeButton;
+    TextButton* editButton;
+    TextButton* muteButton;
+
+    bool showButtons = false;
     
     Action action = noAction;
     
@@ -107,5 +118,8 @@ private:
     
     std::vector<std::shared_ptr<CoefficientComponent>> coefficientComponents;
     
+    ApplicationState appState;
+    int prevMouseX = 0;
+    int prevMouseY = 0;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object1D)
 };

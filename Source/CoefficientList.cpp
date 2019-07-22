@@ -23,6 +23,7 @@ CoefficientList::CoefficientList()
     coeffTopLabel->setText ("Coefficients", dontSendNotification);
     coeffTopLabel->setFont (Font (18.0f));
     addAndMakeVisible (coeffTopLabel);
+    coeffTopLabel->setVisible (false);
     
     list.setColour(ListBox::backgroundColourId, getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
     list.setRowHeight (GUIDefines::listBoxRowHeight);
@@ -85,6 +86,7 @@ std::shared_ptr<CoefficientComponent> CoefficientList::addCoefficient (std::shar
 
 void CoefficientList::repaintAndUpdate()
 {
+    coeffTopLabel->setVisible (coefficients.size() == 0 ? false : true);
     repaint();
     list.updateContent();
 }

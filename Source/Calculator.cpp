@@ -163,7 +163,8 @@ void Calculator::buttonClicked (Button* button)
     if (key.KeyPress::isCurrentlyDown())
     {
         if (button == createPM && !createPMalreadyClicked)
-            createPMalreadyClicked = true;
+        {
+        }
         else if (button != createPM)
         {
             button->setState (Button::ButtonState::buttonNormal);
@@ -181,6 +182,7 @@ void Calculator::buttonClicked (Button* button)
         if (createPMalreadyClicked)
             return;
         std::cout << "createPMclicked" << std::endl;
+        createPMalreadyClicked = true;
         changeMessage = createPMMessage;
         sendChangeMessage();
     }
@@ -202,20 +204,6 @@ void Calculator::buttonClicked (Button* button)
 bool Calculator::keyPressed(const KeyPress& key, Component* originatingComponent)
 {
     
-}
-
-// Linking the return key to the createPM button
-bool Calculator::keyStateChanged (bool isKeyDown, Component* originatingComponent)
-{
-    KeyPress key = KeyPress (KeyPress::returnKey);
-    if (key.KeyPress::isCurrentlyDown())
-    {
-        returnKeyIsDown = true;
-    }
-    else if (returnKeyIsDown) // this means that the return key is released
-    {
-        createPMalreadyClicked = false;
-    }
 }
 
 bool Calculator::refresh()
@@ -294,6 +282,9 @@ bool Calculator::refresh()
 
 TextButton* Calculator::getButton (String buttonName)
 {
+    if (buttonName == "coeff")
+        return coeff;
+    
     for (auto button : buttons)
         if (button->getName() == buttonName)
             return button;

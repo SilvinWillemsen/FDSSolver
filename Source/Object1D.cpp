@@ -31,15 +31,25 @@ Object1D::Object1D (String equationString, Equation stencil, double h) : equatio
     stencilIdxStart = (stencil.getStencilWidth() - 1) / 2.0; // should be an integer
     
     // GUI STUFF
+    buttons.add (new TextButton("Mute"));
+    muteButton = buttons[0];
     
-    editButton.setName ("Edit");
-    editButton.setButtonText ("E");
-    editButton.addListener (this);
+    muteButton->setButtonText ("M");
+    muteButton->addListener (this);
+    addAndMakeVisible (muteButton);
+    
+    buttons.add (new TextButton("Edit"));
+    editButton = buttons[1];
+    
+    editButton->setButtonText ("E");
+    editButton->addListener (this);
     addAndMakeVisible (editButton);
     
-    removeButton.setName ("Remove");
-    removeButton.setButtonText (String (CharPointer_UTF8 ("\xc3\x97")));
-    removeButton.addListener (this);
+    buttons.add (new TextButton("Remove"));
+    removeButton = buttons[2];
+    
+    removeButton->setButtonText (String (CharPointer_UTF8 ("\xc3\x97")));
+    removeButton->addListener (this);
     addAndMakeVisible (removeButton);
     
 }
@@ -60,8 +70,8 @@ Path Object1D::visualiseState()
 {
     auto stringBounds = getHeight() / 2.0;
     Path stringPath;
-    stringPath.startNewSubPath(0, stringBounds);
-    int stateWidth = GUIDefines::horStateArea * getWidth();
+    stringPath.startNewSubPath (0, stringBounds);
+    int stateWidth = (showButtons ? GUIDefines::horStateArea : 1.0) * getWidth();
     auto spacing = stateWidth / static_cast<double>(N - 1);
     auto x = spacing;
     
@@ -86,14 +96,18 @@ Path Object1D::visualiseState()
 
 void Object1D::resized()
 {
-    Rectangle<int> buttonArea = getLocalBounds();
-    buttonArea.removeFromLeft (GUIDefines::horStateArea * getWidth());
-    buttonArea.removeFromLeft (GUIDefines::margin);
-    buttonArea.removeFromRight (GUIDefines::margin);
-    
-    editButton.setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
-    buttonArea.removeFromTop (GUIDefines::margin);
-    removeButton.setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+    if (showButtons)
+    {
+        Rectangle<int> buttonArea = getLocalBounds();
+        buttonArea.removeFromLeft (GUIDefines::horStateArea * getWidth());
+        buttonArea.removeFromLeft (GUIDefines::margin);
+        
+        muteButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+        buttonArea.removeFromTop (GUIDefines::margin * 0.5);
+        editButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+        buttonArea.removeFromTop (GUIDefines::margin * 0.5);
+        removeButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+    }
 }
 
 void Object1D::calculateFDS()
@@ -136,9 +150,53 @@ void Object1D::excite()
 }
 void Object1D::mouseDown (const MouseEvent& e)
 {
+    if (appState != normalAppState)
+        return;
     action = objectClicked;
     sendChangeMessage();
     excited = true;
+}
+
+void Object1D::mouseMove (const MouseEvent &e)
+{
+    if (appState != normalAppState)
+        return;
+    
+    int dist = sqrt((prevMouseX - e.x) * (prevMouseX - e.x) + (prevMouseY - e.y) * (prevMouseY - e.y));
+    if (dist > 10)
+    {
+        prevMouseX = e.x;
+        prevMouseY = e.y;
+        startTimer (1000);
+    } else {
+        return;
+    }
+    
+    if (!showButtons)
+    {
+        for (auto button : buttons)
+        {
+            button->setVisible (true);
+        }
+        showButtons = true;
+        resized();
+    }
+}
+
+void Object1D::timerCallback()
+{
+    for (auto button : buttons)
+    {
+        if (button->isOver())
+            return;
+    }
+    stopTimer();
+    for (auto button : buttons)
+    {
+        button->setVisible (false);
+    }
+    showButtons = false;
+    resized();
 }
 
 void Object1D::refreshCoefficients()
@@ -160,15 +218,23 @@ void Object1D::buttonClicked (Button* button)
         button->setState (Button::ButtonState::buttonNormal);
         return;
     }
-    
-    if (button == &editButton)
+    if (button == muteButton)
+    {
+        action = muteObject;
+    }
+    if (button == editButton)
     {
         action = editObject;
     }
-    if (button == &removeButton)
+    if (button == removeButton)
     {
         action = removeObject;
     }
     
     sendChangeMessage();
+}
+
+void Object1D::setApplicationState(ApplicationState applicationState)
+{
+    appState = applicationState;
 }

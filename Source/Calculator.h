@@ -40,7 +40,6 @@ public:
 
     void buttonClicked (Button* button) override;
     bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
-    bool keyStateChanged (bool isKeyDown, Component* originatingComponent) override;
     bool refresh();
     TextButton* getButton (String buttonName);
     
@@ -61,6 +60,9 @@ public:
     String decoder (String equation);
     
     void setApplicationState (ApplicationState state);
+    
+    bool createPMalreadyClicked = false;
+    bool returnKeyIsDown = false;
     
 private:
     OwnedArray<TextButton> buttons;
@@ -97,9 +99,6 @@ private:
     TextButton* backSpace = nullptr;
     
     TextButton* uLN = nullptr;
-    
-    bool createPMalreadyClicked = false;
-    bool returnKeyIsDown = false;
     
     ChangeMessage changeMessage = noChangeMessage;
     

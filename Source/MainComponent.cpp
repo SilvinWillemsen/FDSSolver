@@ -38,7 +38,7 @@ MainComponent::MainComponent()
 MainComponent::~MainComponent()
 {
     // This shuts down the audio device and clears the audio source.
-    Timer::stopTimer();
+    stopTimer();
     shutdownAudio();
 }
 
@@ -55,7 +55,7 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
     fs = sampleRate;
     bufferSize = samplesPerBlockExpected;
     fdsSolver = new FDSsolver (&coefficientList, GUIDefines::debug ? 1.0 : 1.0 / fs);// / fs);
-    Timer::startTimerHz (120);
+    startTimerHz (15);
 //    equation =
     refresh();
 }
@@ -149,7 +149,7 @@ void MainComponent::addCoefficient()
         int coeffIndex = coefficientList.containsCoefficient (coeffName);
         if (coeffIndex >= 0)
         {
-            coefficientList.getCoefficients()[coeffIndex]->update (isDynamic, value);
+            coefficientList.getCoefficients()[coeffIndex].get()->update (isDynamic, value);
         } else {
             std::shared_ptr<CoefficientComponent> newCoeff = coefficientList.addCoefficient (coeffName, value, isDynamic);
             newCoeff.get()->addChangeListener (this);
@@ -202,6 +202,9 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
         if (source == object)
         {
             switch (object->getAction()) {
+                case muteObject:
+                    object->setZeroFlag();
+                    break;
                 case editObject:
                     calculator->setEquationString (object->getEquationString());
                     calculator->getButton ("createPM")->setButtonText ("Edit");
@@ -212,7 +215,10 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     
                 case removeObject:
                     objects.removeObject (object);
+                    calculator->clearEquation();
                     coefficientList.emptyCoefficientList();
+                    if (appState != normalAppState)
+                        changeAppState (normalAppState);
                     break;
                     
                 case objectClicked:
@@ -235,7 +241,8 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
             String name = coefficientComponent->getName();
             switch (coefficientComponent->getAction()) {
                 case insertCoeff:
-                    calculator->addToEquation (calculator->encoder (name) + "_");
+                    if (calculator->getButton("coeff")->isEnabled())
+                        calculator->addToEquation (calculator->encoder (name) + "_");
                     break;
                     
                 case editCoeff:
@@ -294,7 +301,6 @@ bool MainComponent::createPhysicalModel()
         newObject->setCoefficientTermIndex (coefficientTermIndex);
         newObject->refreshCoefficients();
         addAndMakeVisible (newObject);
-    
         changeAppState (normalAppState);
     } else {
         return false;
@@ -320,6 +326,7 @@ void MainComponent::buttonClicked (Button* button)
     if (key.KeyPress::isCurrentlyDown())
     {
         button->setState (Button::ButtonState::buttonNormal);
+        calculator->buttonClicked (calculator->getButton("createPM"));
         return;
     }
     
@@ -328,15 +335,14 @@ void MainComponent::buttonClicked (Button* button)
         if (appState == normalAppState)
         {
             changeAppState (newObjectState);
-            newButton->setButtonText ("CANCEL");
         }
         else if (appState == newObjectState) // new model has been cancelled
         {
             coefficientList.emptyCoefficientList();
             changeAppState (normalAppState);
-            newButton->setButtonText ("New Model");
         }
     }
+    
 }
 
 void MainComponent::sliderValueChanged (Slider* slider)
@@ -476,10 +482,45 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
     return true;
 }
 
+// Linking the return key to the createPM button
+bool MainComponent::keyStateChanged (bool isKeyDown, Component* originatingComponent)
+{
+    KeyPress key = KeyPress (KeyPress::returnKey);
+    if (key.KeyPress::isCurrentlyDown())
+    {
+        calculator->returnKeyIsDown = true;
+        if (!calculator->createPMalreadyClicked)
+            calculator->buttonClicked (calculator->getButton("createPM"));
+    }
+    else if (calculator->returnKeyIsDown) // this means that the return key is released
+    {
+        calculator->createPMalreadyClicked = false;
+    }
+    return true;
+}
+
 void MainComponent::changeAppState (ApplicationState applicationState)
 {
+    switch (applicationState) {
+        case newObjectState:
+            newButton->setEnabled (true);
+            newButton->setButtonText ("CANCEL");
+            break;
+        case normalAppState:
+            newButton->setEnabled (true);
+            newButton->setButtonText ("New Model");
+            break;
+        case editObjectState:
+            newButton->setEnabled (false);
+            break;
+        default:
+            break;
+    }
     coefficientList.setApplicationState (applicationState);
     calculator->setApplicationState (applicationState);
+    for (auto object : objects)
+        object->setApplicationState (applicationState);
+        
     appState = applicationState;
 }
 

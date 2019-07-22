@@ -127,6 +127,7 @@ void CoefficientComponent::update (bool dyn, double val)
     }
     
     dynamic = dyn;
+    value = val;
     
     if (dynamic)
     {

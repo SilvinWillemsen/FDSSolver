@@ -74,6 +74,8 @@ enum Action
     editCoeff,
     removeCoeff,
     sliderMoved,
+    
+    muteObject,
     editObject,
     removeObject,
     objectClicked,

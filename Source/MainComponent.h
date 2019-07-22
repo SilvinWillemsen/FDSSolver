@@ -58,7 +58,8 @@ public:
     double clip (double output, double min = -1.0, double max = 1.0);
     
     bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
-
+    bool keyStateChanged (bool isKeyDown, Component* originatingComponent) override;
+    
     void changeAppState (ApplicationState applicationState);
 private:
     //==============================================================================
