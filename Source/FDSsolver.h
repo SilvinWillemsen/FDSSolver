@@ -31,7 +31,7 @@ public:
     bool checkEquation (String& equation);
     bool checkSyntax (StringArray& tokens);
     
-    bool solve (String& equationString, Equation& eq, NamedValueSet* coefficients, Array<var>& coefficientTermIndex);
+    bool solve (String& equationString, Equation& eq, NamedValueSet* coefficients, Array<var>& coefficientTermIndex, std::vector<Equation>& terms);
     double calculateGridSpacing (Equation& eq, double coeffValue);
     
     StringArray getUsedCoeffs (String& equationString);
@@ -57,7 +57,7 @@ public:
     std::vector<std::vector<double>> getStencil (Equation& eq);
     int getStencilWidth (String& equationString, bool checkSpace);
     
-    std::vector<Equation> getTerms() { return terms; };
+//    std::vector<Equation> getTerms() { return terms; };
     Array<var>& getCoeffTermIndex() { return coefficientTermIndex; };
     
     bool checkIfCoefficientExists (String& coeff);
@@ -67,7 +67,6 @@ private:
     CoefficientList* coefficientList;
     
     int numTerms = 0;
-    std::vector<Equation> terms;
     std::vector<double> coeffsPerTerm;
     NamedValueSet coefficients;
     

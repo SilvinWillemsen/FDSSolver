@@ -61,6 +61,7 @@ public:
     bool keyStateChanged (bool isKeyDown, Component* originatingComponent) override;
     
     void changeAppState (ApplicationState applicationState);
+    
 private:
     //==============================================================================
     // Your private member variables go here...
@@ -89,9 +90,14 @@ private:
     CoeffPopupState coeffPopupState = normalCoeffState;
     
     Object1D* editingObject = nullptr;
+    Object1D* currentlySelectedObject = nullptr;
     bool repaintFlag = false;
     
     ScopedPointer<TextButton> newButton;
+    
+    Label cpuUsage;
+    Label graphicsLabel;
+    Slider graphicsSlider;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

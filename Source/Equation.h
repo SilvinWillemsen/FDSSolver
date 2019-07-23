@@ -21,21 +21,20 @@ public:
     
     // OPERATORS //
     
-    Equation operator* (double val) {
-        
-        for (int i = 0; i < uCoeffs.size(); ++i)
-            for (int j = 0; j < uCoeffs[i].size(); ++j )
-                uCoeffs[i][j] *= val;
-        return *this;
+    friend Equation operator* (Equation eq, const double& val) {
+        for (int i = 0; i < eq.getTimeSteps(); ++i)
+            for (int j = 0; j < eq.getStencilWidth(); ++j )
+                eq.getUCoeffs(i)[j] *= val;
+        return eq;
     };
     
-    Equation operator/ (double val) {
+    friend Equation operator/ (Equation eq, const double& val) {
         
-        for (int i = 0; i < uCoeffs.size(); ++i)
-            for (int j = 0; j < uCoeffs[i].size(); ++j )
-                uCoeffs[i][j] /= val;
+        for (int i = 0; i < eq.getTimeSteps(); ++i)
+            for (int j = 0; j < eq.getStencilWidth(); ++j )
+                eq.getUCoeffs(i)[j] /= val;
         
-        return *this;
+        return eq;
     };
     
     Equation operator+ (Equation& eq) {

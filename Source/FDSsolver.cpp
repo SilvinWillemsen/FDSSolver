@@ -65,7 +65,7 @@ bool FDSsolver::checkEquation(String& equationString)
     return true;
 }
 
-bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coeffValues, Array<var>& coefficientTermIndex)
+bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coeffValues, Array<var>& coefficientTermIndex, std::vector<Equation>& terms)
 {
     StringArray tokens;
     tokens.addTokens (equationString, "_", "\"");
@@ -131,7 +131,7 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
         
         if (newTermFlag)
         {
-            terms.push_back(Equation (eq.getTimeSteps(), eq.getStencilWidth(), true));
+            terms.push_back (Equation (eq.getTimeSteps(), eq.getStencilWidth(), true));
             ++idx;
             newTermFlag = false;
         }
@@ -212,6 +212,25 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
         }
     }
     
+//    for (int i = 0; i < terms.size(); ++i)
+//    {
+//        int operatorMult = 1;
+//        
+//        // no operator before first term
+//        if (i > 0 && operatorVect[i - 1] == 2)
+//        {
+//            operatorMult = -1;
+//        }
+//        if (i < equalsSignIdx)
+//        {
+//            Equation term = (terms[i]) * (coeffsPerTerm[i] * operatorMult);
+//            eq = eq + term;
+//        } else {
+//            Equation term = (terms[i]) * (coeffsPerTerm[i] * operatorMult);
+//            eq = eq - term;
+//        }
+//    }
+//    
     for (int i = 0; i < terms.size(); ++i)
     {
         int operatorMult = 1;
@@ -222,13 +241,12 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
             operatorMult = -1;
         }
         if (i < equalsSignIdx)
-        {
-            Equation term = (terms[i]) * (coeffsPerTerm[i] * operatorMult);
-            eq = eq + term;
-        } else {
-            Equation term = (terms[i]) * (coeffsPerTerm[i] * operatorMult);
-            eq = eq - term;
-        }
+            terms[i] = terms[i] * operatorMult;
+        else
+            terms[i] = terms[i] * (operatorMult * -1);
+        Equation term = terms[i] * coeffsPerTerm[i];
+        std::cout << coeffsPerTerm[i] << std::endl;
+        eq = eq + term;
     }
     
     int uNextIdx = (eq.getStencilWidth() - 1) / 2.0;
@@ -239,9 +257,13 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
         return false;
     }
     
+    std::cout << "Stencil before division" << std::endl;
+    eq.showStencil();
+    
     if (!GUIDefines::debug)
         eq = eq / (eq.getUCoeffs(0)[uNextIdx]);
     
+    std::cout << "Stencil after division" << std::endl;
     eq.showStencil();
     return true;
 }

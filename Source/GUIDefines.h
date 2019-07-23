@@ -79,6 +79,8 @@ enum Action
     editObject,
     removeObject,
     objectClicked,
+    
+    caughtReturnKey,
 };
 
 enum ApplicationState

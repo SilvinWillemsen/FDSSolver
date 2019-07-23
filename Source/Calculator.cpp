@@ -24,9 +24,10 @@ Calculator::Calculator()
     addAndMakeVisible(textBox);
     
     // Create all buttons
-    buttons.add (new TextButton("createPM"));
+    buttons.add (new TextButton ("createPM"));
     createPM = buttons[0];
-    createPM->setButtonText("Create");
+    createPM->setButtonText ("Create");
+    createPM->addShortcut (KeyPress (KeyPress::returnKey));
     
     buttons.add (new TextButton("clearEq"));
     clearEq = buttons[1];
@@ -201,7 +202,7 @@ void Calculator::buttonClicked (Button* button)
     refresh();
 }
 
-bool Calculator::keyPressed(const KeyPress& key, Component* originatingComponent)
+bool Calculator::keyPressed (const KeyPress& key, Component* originatingComponent)
 {
     
 }
@@ -356,10 +357,15 @@ void Calculator::setApplicationState (ApplicationState state)
     switch (state) {
         case normalAppState:
             setEnabled (false);
+            createPM->setButtonText ("Create");
             clearEquation();
             break;
         case newObjectState:
+            clearEquation();
+            setEnabled (true);
+            break;
         case editObjectState:
+            createPM->setButtonText ("Edit");
             setEnabled (true);
             break;
         default:

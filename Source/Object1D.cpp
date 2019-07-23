@@ -12,16 +12,21 @@
 #include "Object1D.h"
 
 //==============================================================================
-Object1D::Object1D (String equationString, Equation stencil, double h) : equationString (equationString),
-                                                               stencil (stencil),
-                                                               h (h),
-                                                               N (1.0 / h)
+Object1D::Object1D (String equationString, Equation stencil, double h, std::vector<Equation> termsInput) : equationString (equationString),
+                                                                                                          stencil (stencil),
+                                                                                                          h (h),
+                                                                                                          N (1.0 / h)
 {
-    uVecs.resize (3); //resize according to amount of vectors in stencil
+    terms.reserve (termsInput.size());
+    for (int i = 0; i < termsInput.size(); ++i)
+        terms.push_back (termsInput[i]);
     
-    for (int i = 0; i < uVecs.size(); ++i)
-        uVecs[i] = std::vector<double> (N, 0);
+    uVecs.reserve (stencil.getTimeSteps()); //resize according to amount of vectors in stencil
     
+    for (int i = 0; i < stencil.getTimeSteps(); ++i)
+        uVecs.push_back (std::vector<double> (N, 0));
+    
+
     numTimeSteps = stencil.getTimeSteps();
     u.resize (numTimeSteps);
     
@@ -199,15 +204,47 @@ void Object1D::timerCallback()
     resized();
 }
 
+// LOTS OF THIS FUNCTION IS THE SAME AS THE END OF FDSsolver::solve (...)
 void Object1D::refreshCoefficients()
 {
-    for (int i = 0; i < coefficientTermIndex.size(); ++i)
+    // reset stencil
+    stencil = Equation (stencil.getTimeSteps(), stencil.getStencilWidth());
+    
+    for (int i = 0; i < terms.size(); ++i)
     {
+        Equation term (stencil.getTimeSteps(), stencil.getStencilWidth());
+        term = term + terms[i];
         for (int j = 0; j < coefficientTermIndex[i].size(); ++j)
         {
-            std::cout << "Term " << i << " is multiplied by " << coefficientTermIndex[i][j].toString() << std::endl;
+            if (coefficientTermIndex[i][j].isString())
+            {
+                bool coeffExists = false;
+                for (auto coeff : coefficientComponents)
+                {
+                    if (coeff->getName() == coefficientTermIndex[i][j].toString())
+                    {
+                        coeffExists = true;
+                        term = term * (coeff->getValue());
+                        std::cout << "Term " << i << " is multiplied by " << coefficientTermIndex[i][j].toString() << " which has a value of " << coeff->getValue() <<  std::endl;
+                    }
+                }
+                if (!coeffExists)
+                    std::cout << coefficientTermIndex[i][j].toString() << " doesn't exist!" << std::endl;
+            } else {
+                term = term * (static_cast<int> (coefficientTermIndex[i][j]));
+            }
         }
+        stencil = stencil + term;
     }
+    
+    // recalculate gridspacing also somewhere
+    stencil.setNumPointsFromGridSpacing (h);
+    int uNextIdx = (stencil.getStencilWidth() - 1) / 2.0;
+
+    if (!GUIDefines::debug)
+        stencil = stencil / (stencil.getUCoeffs(0)[uNextIdx]);
+    
+    refreshCoefficientsFlag = false;
 }
 
 void Object1D::buttonClicked (Button* button)
@@ -234,7 +271,16 @@ void Object1D::buttonClicked (Button* button)
     sendChangeMessage();
 }
 
-void Object1D::setApplicationState(ApplicationState applicationState)
+void Object1D::setApplicationState (ApplicationState applicationState)
 {
+    switch (applicationState)
+    {
+        case newObjectState:
+        case editObjectState:
+            setZeroFlag();
+            break;
+        case normalAppState:
+            break;
+    };
     appState = applicationState;
 }

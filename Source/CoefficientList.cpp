@@ -126,6 +126,7 @@ void CoefficientList::removeCoefficient (std::shared_ptr<CoefficientComponent> c
     for (int i = 0; i < coefficients.size(); ++i)
         if (coefficients[i] == coeffToRemove)
         {
+            coefficients[i]->setVisible (false);
             coefficients[i].reset();
             
             if (eraseFromVector)
@@ -147,10 +148,10 @@ void CoefficientList::emptyCoefficientList (bool update)
 
 void CoefficientList::loadCoefficientsFromObject (std::vector<std::shared_ptr<CoefficientComponent>>& coefficientsFromObject)
 {
-    
     emptyCoefficientList (false);
     for (auto coeff : coefficientsFromObject)
     {
+        coeff->setVisible (true);
         addCoefficient (coeff);
     }
     repaintAndUpdate();
@@ -173,6 +174,17 @@ void CoefficientList::setApplicationState (ApplicationState applicationState)
     for (auto coefficient : coefficients)
     {
         coefficient->setApplicationState (applicationState);
+    }
+    switch (applicationState)
+    {
+        case newObjectState:
+        case normalAppState:
+            emptyCoefficientList();
+            break;
+        case editObjectState:
+            break;
+        default:
+            break;
     }
     appState = applicationState;
 }

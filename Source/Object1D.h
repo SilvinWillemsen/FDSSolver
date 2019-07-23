@@ -31,7 +31,7 @@ class Object1D    : public Component,
                     public Timer
 {
 public:
-    Object1D (String equationString, Equation stencil, double h);
+    Object1D (String equationString, Equation stencil, double h, std::vector<Equation> terms);
     ~Object1D();
 
     void paint (Graphics&) override;
@@ -51,7 +51,7 @@ public:
     
     void timerCallback() override;
     
-    void setCoefficient (String name, double value) { coefficients.set(name, value); };
+    void setCoefficient (String name, double value) { coefficients.set(name, value); refreshCoefficientsFlag = true; };
     void setCoefficients (NamedValueSet& coeffs) {
         for (int i = 0; i < coeffs.size(); ++i)
         {
@@ -80,8 +80,12 @@ public:
     
     void setApplicationState (ApplicationState applicationState);
     
+    bool needsCoefficientsRefreshed() { return refreshCoefficientsFlag; } ;
+    
 private:
     String equationString;
+    
+    std::vector<Equation> terms;
     
     // pointers to the different states
     std::vector<double*> u;
@@ -121,5 +125,7 @@ private:
     ApplicationState appState;
     int prevMouseX = 0;
     int prevMouseY = 0;
+    
+    bool refreshCoefficientsFlag = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object1D)
 };

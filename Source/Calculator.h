@@ -51,7 +51,7 @@ public:
     void setEquationString (String eqString) { equationString = eqString; };
     String getEquationString() { return equationString; };
     void addToEquation (String stringToAdd) { equationString += stringToAdd; refresh(); };
-    void clearEquation() { equationString = ""; textBox->setText ("", dontSendNotification); };
+    void clearEquation() { equationString = ""; refresh(); };
     
     // Use for one character
     String encoder (String equation);

@@ -33,7 +33,7 @@ CoefficientComponent::CoefficientComponent (const String& name, double val, bool
     dynamicCoeffLabel.setText(getName() + " = ", dontSendNotification);
     addAndMakeVisible (dynamicCoeffLabel);
     
-    update (dynamic, value);
+    update (dynamic, value, true);
 
     // buttons
     coefficientButton.setName (name);
@@ -89,7 +89,6 @@ void CoefficientComponent::resized()
         label.setBounds (totalArea);
     }
     
-//    totalArea.removeFromLeft (GUIDefines::margin);
 }
 
 void CoefficientComponent::sliderValueChanged (Slider* slider)
@@ -101,6 +100,15 @@ void CoefficientComponent::sliderValueChanged (Slider* slider)
 
 void CoefficientComponent::buttonClicked (Button* button)
 {
+    KeyPress key = KeyPress (KeyPress::returnKey);
+    if (key.KeyPress::isCurrentlyDown())
+    {
+        button->setState (Button::ButtonState::buttonNormal);
+        action = caughtReturnKey;
+        sendChangeMessage();
+        return;
+    }
+    
     if (button == &coefficientButton)
     {
         action = insertCoeff;
@@ -117,7 +125,7 @@ void CoefficientComponent::buttonClicked (Button* button)
     sendChangeMessage();
 }
 
-void CoefficientComponent::update (bool dyn, double val)
+void CoefficientComponent::update (bool dyn, double val, bool init)
 {
     // if changed from static to dynamic or vice versa
     if (dyn != dynamic)
@@ -131,7 +139,8 @@ void CoefficientComponent::update (bool dyn, double val)
     
     if (dynamic)
     {
-        slider.setRange(0.0, val);
+        if (init)
+            slider.setRange (0.0, val);
         slider.setValue (val);
     } else {
         label.setText ((appState == normalAppState ? getName() : "") + " = " + String (val), dontSendNotification);

@@ -33,7 +33,7 @@ public:
     void buttonClicked (Button* button) override;
 
     bool isDynamic() { return dynamic; };
-    void update (bool dyn, double val);
+    void update (bool dyn, double val, bool init = false);
     
     Action getAction() { return action; }
     

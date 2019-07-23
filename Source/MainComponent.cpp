@@ -14,7 +14,6 @@ MainComponent::MainComponent()
     calculator = new Calculator();
     calculator->addChangeListener (this);
     addAndMakeVisible (calculator);
-    calculator->getButton("createPM")->addShortcut (KeyPress (KeyPress::returnKey));
     
     addCoeffWindow = new AddCoefficient();
     
@@ -31,6 +30,18 @@ MainComponent::MainComponent()
     changeAppState (normalAppState);
     setSize (800, 600);
 
+    cpuUsage.setColour(Label::textColourId, Colours::white);
+    addAndMakeVisible (cpuUsage);
+    
+    graphicsLabel.setText ("Graphics update speed: ", dontSendNotification);
+    graphicsLabel.setColour (Label::textColourId, Colours::white);
+    addAndMakeVisible (graphicsLabel);
+
+    graphicsSlider.setRange (0.0, 60, 1.0);
+    graphicsSlider.setValue (15);
+    graphicsSlider.addListener (this);
+    addAndMakeVisible (graphicsSlider);
+    
     // specify the number of input and output channels that we want to open
     setAudioChannels (2, 2);
 }
@@ -55,7 +66,6 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
     fs = sampleRate;
     bufferSize = samplesPerBlockExpected;
     fdsSolver = new FDSsolver (&coefficientList, GUIDefines::debug ? 1.0 : 1.0 / fs);// / fs);
-    startTimerHz (15);
 //    equation =
     refresh();
 }
@@ -63,6 +73,16 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
 void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill)
 {
     bufferToFill.clearActiveBufferRegion();
+    for (auto object : objects)
+    {
+        if (object->needsToBeZero())
+            object->setZero();
+        if (object->needsCoefficientsRefreshed())
+            object->refreshCoefficients();
+    }
+    
+    if (appState != normalAppState)
+        return;
     
     float *const channelData1 = bufferToFill.buffer->getWritePointer(0, bufferToFill.startSample);
     float *const channelData2 = bufferToFill.buffer->getWritePointer(1, bufferToFill.startSample);
@@ -82,9 +102,7 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
         channelData1[i] = clip(output);
         channelData2[i] = clip(output);
     }
-    for (auto object : objects)
-        if (object->needsToBeZero())
-            object->setZero();
+    
 }
 
 void MainComponent::releaseResources()
@@ -128,7 +146,17 @@ void MainComponent::resized()
     // Draw Coefficients
     coefficientList.setBounds (coefficientArea);
     
-    newButton->setBounds (GUIDefines::margin, getHeight() - GUIDefines::margin - GUIDefines::buttonHeight, 100, GUIDefines::buttonHeight);
+    Rectangle<int> lowerButtonArea = getLocalBounds().removeFromBottom(GUIDefines::margin * 2 + GUIDefines::buttonHeight);
+    lowerButtonArea.reduce (GUIDefines::margin, GUIDefines::margin);
+    newButton->setBounds (lowerButtonArea.removeFromLeft(100));
+    lowerButtonArea.removeFromLeft (GUIDefines::margin);
+    cpuUsage.setBounds (lowerButtonArea.removeFromLeft(100));
+    
+    graphicsSlider.setBounds (lowerButtonArea.removeFromRight (200));
+    lowerButtonArea.removeFromRight (GUIDefines::margin);
+    
+    graphicsLabel.setBounds(lowerButtonArea.removeFromRight (150));
+    
 }
 
 void MainComponent::addCoefficient()
@@ -149,7 +177,7 @@ void MainComponent::addCoefficient()
         int coeffIndex = coefficientList.containsCoefficient (coeffName);
         if (coeffIndex >= 0)
         {
-            coefficientList.getCoefficients()[coeffIndex].get()->update (isDynamic, value);
+            coefficientList.getCoefficients()[coeffIndex].get()->update (isDynamic, value, true);
         } else {
             std::shared_ptr<CoefficientComponent> newCoeff = coefficientList.addCoefficient (coeffName, value, isDynamic);
             newCoeff.get()->addChangeListener (this);
@@ -207,9 +235,8 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                 case editObject:
                     calculator->setEquationString (object->getEquationString());
-                    calculator->getButton ("createPM")->setButtonText ("Edit");
+                    coefficientList.loadCoefficientsFromObject (object->getCoefficientComponents());
                     editingObject = object;
-                    editingObject->setZeroFlag();
                     changeAppState (editObjectState);
                     break;
                     
@@ -222,6 +249,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                     
                 case objectClicked:
+                    currentlySelectedObject = object;
                     calculator->setEquationString (object->getEquationString());
                     repaint();
                     coefficientList.loadCoefficientsFromObject (object->getCoefficientComponents());
@@ -260,9 +288,13 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                     
                 case sliderMoved:
-                    coefficients.set (name, coefficientComponent->getSliderValue());
+                    if (currentlySelectedObject != nullptr)
+                        currentlySelectedObject->setCoefficient (coefficientComponent->getName(), coefficientComponent->getSliderValue());
                     break;
                     
+                case caughtReturnKey:
+                    calculator->buttonClicked (calculator->getButton("createPM"));
+                    break;
                 default:
                     break;
             }
@@ -279,14 +311,20 @@ bool MainComponent::createPhysicalModel()
     Equation eq (amountOfTimeSteps, stencilWidth);
     
     Array<var> coefficientTermIndex;
-    if (fdsSolver->solve (equationString, eq, &coefficients, coefficientTermIndex))
+    std::vector<Equation> terms;
+    if (fdsSolver->solve (equationString, eq, &coefficients, coefficientTermIndex, terms))
     {
+        Object1D* newObject;
+        double h = fdsSolver->calculateGridSpacing (eq, static_cast<double>(coefficients.getValueAt(0)));
         if (appState != editObjectState)
-            objects.add (new Object1D (equationString, eq, fdsSolver->calculateGridSpacing (eq, static_cast<double>(coefficients.getValueAt(0)))));
-        else
-            objects.set (objects.indexOf (editingObject), new Object1D (equationString, eq, fdsSolver->calculateGridSpacing (eq, static_cast<double> (coefficients.getValueAt(0)))));
-        
-        Object1D* newObject = objects[objects.size() - 1];
+        {
+            objects.add (new Object1D (equationString, eq, h, terms));
+            newObject = objects[objects.size() - 1];
+        } else {
+            int editedObjectIdx = objects.indexOf (editingObject);
+            objects.set (editedObjectIdx, new Object1D (equationString, eq, h, terms));
+            newObject = objects[editedObjectIdx];
+        }
         
         // only add the coefficients that are actually used by the newly created object
         StringArray usedCoeffs = fdsSolver->getUsedCoeffs (equationString);
@@ -296,11 +334,12 @@ bool MainComponent::createPhysicalModel()
         for (auto coeffComp : coefficientList.getCoefficients())
             if (currentCoefficients.contains(coeffComp.get()->getName()))
                 newObject->setCoefficientComponent (coeffComp);
-        
-        newObject->addChangeListener (this);
+
         newObject->setCoefficientTermIndex (coefficientTermIndex);
         newObject->refreshCoefficients();
+        newObject->addChangeListener (this);
         addAndMakeVisible (newObject);
+        
         changeAppState (normalAppState);
     } else {
         return false;
@@ -314,9 +353,6 @@ bool MainComponent::editPhysicalModel()
     if (!createPhysicalModel())
         return false;
     editingObject = nullptr;
-    calculator->getButton("createPM")->setButtonText ("Create");
-    appState = normalAppState;
-    
     return true;
 }
     
@@ -347,15 +383,17 @@ void MainComponent::buttonClicked (Button* button)
 
 void MainComponent::sliderValueChanged (Slider* slider)
 {
-    coefficients.set (slider->getName(), slider->getValue());
-    for (auto object : objects)
-    {
-        if (object->getCoefficientPtr()->contains (slider->getName()))
-        {
-            object->getCoefficientPtr()->set (slider->getName(), slider->getValue());
-            object->refreshCoefficients();
-        }
-    }
+    if (slider == &graphicsSlider)
+        startTimerHz (slider->getValue());
+//    coefficients.set (slider->getName(), slider->getValue());
+//    for (auto object : objects)
+//    {
+//        if (object->getCoefficientPtr()->contains (slider->getName()))
+//        {
+//            object->getCoefficientPtr()->set (slider->getName(), slider->getValue());
+//            object->refreshCoefficients();
+//        }
+//    }
 }
 
 void MainComponent::refresh()
@@ -374,6 +412,10 @@ void MainComponent::timerCallback()
 {
     for (int i = 0; i < objects.size(); ++i)
         objects[i]->repaint();
+    
+    double cpu = static_cast<int>(deviceManager.getCpuUsage() * 1000.0) / 10.0;
+    cpuUsage.setText ("CPU: " + String (cpu) + " %", dontSendNotification);
+    
 }
 
 double MainComponent::clip (double output, double min, double max)
@@ -501,6 +543,8 @@ bool MainComponent::keyStateChanged (bool isKeyDown, Component* originatingCompo
 
 void MainComponent::changeAppState (ApplicationState applicationState)
 {
+    currentlySelectedObject = nullptr;
+    
     switch (applicationState) {
         case newObjectState:
             newButton->setEnabled (true);
