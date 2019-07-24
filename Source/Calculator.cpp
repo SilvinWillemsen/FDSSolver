@@ -171,6 +171,8 @@ void Calculator::buttonClicked (Button* button)
             button->setState (Button::ButtonState::buttonNormal);
             return;
         }
+    } else {
+        createPMalreadyClicked = false;
     }
     
     if (button == clearEq)

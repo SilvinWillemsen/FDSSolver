@@ -14,7 +14,8 @@
 //==============================================================================
 Object::Object (String equationString,
                     Equation stencil,
-                    std::vector<Equation> termsInput) : equationString (equationString),
+                    std::vector<Equation> termsInput,
+                    std::vector<BoundaryCondition> boundaries) : equationString (equationString),
                                                         stencil (stencil),
                                                         h (stencil.getGridSpacing()),
                                                         N (1.0 / h)
@@ -22,6 +23,8 @@ Object::Object (String equationString,
 //#ifdef AVX_SUPPORTED
 //    std::cout << "AVX" << std::endl;
 //#endif
+    leftBoundary = boundaries[0];
+    rightBoundary = boundaries[1];
     terms.reserve (termsInput.size());
     for (int i = 0; i < termsInput.size(); ++i)
         terms.push_back (termsInput[i]);
@@ -65,14 +68,14 @@ Object::Object (String equationString,
     boundaryButtons.add (new TextButton ("Left"));
     leftBoundButton = boundaryButtons[0];
     
-    leftBoundButton->setButtonText ("-");
+    leftBoundButton->setButtonText (leftBoundary == clamped ? "-" : "/");
     leftBoundButton->addListener (this);
     addAndMakeVisible (leftBoundButton);
     
     boundaryButtons.add (new TextButton ("Right"));
     rightBoundButton = boundaryButtons[1];
     
-    rightBoundButton->setButtonText ("-");
+    rightBoundButton->setButtonText (rightBoundary == clamped ? "-" : "\\");
     rightBoundButton->addListener (this);
     addAndMakeVisible (rightBoundButton);
 
@@ -132,10 +135,13 @@ void Object::resized()
         buttonArea.removeFromTop (GUIDefines::margin * 0.5);
         removeButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
     }
-    Rectangle<int> boundButtonArea = getLocalBounds().removeFromBottom (GUIDefines::buttonHeight + GUIDefines::margin);
-    boundButtonArea.removeFromBottom (GUIDefines::margin);
-    leftBoundButton->setBounds (boundButtonArea.removeFromLeft (GUIDefines::buttonWidth / 2.0));
-    rightBoundButton->setBounds (boundButtonArea.removeFromRight (GUIDefines::buttonWidth / 2.0));
+    else if (appState != normalAppState)
+    {
+        Rectangle<int> boundButtonArea = getLocalBounds().removeFromBottom (GUIDefines::buttonHeight + GUIDefines::margin);
+        boundButtonArea.removeFromBottom (GUIDefines::margin);
+        leftBoundButton->setBounds (boundButtonArea.removeFromLeft (GUIDefines::buttonWidth / 2.0));
+        rightBoundButton->setBounds (boundButtonArea.removeFromRight (GUIDefines::buttonWidth / 2.0));
+    }
 }
 
 void Object::calculateFDS()
@@ -190,7 +196,10 @@ void Object::mouseDown (const MouseEvent& e)
 void Object::mouseMove (const MouseEvent &e)
 {
     if (appState != normalAppState)
+    {
+        showButtons = false;
         return;
+    }
     
     int dist = sqrt((prevMouseX - e.x) * (prevMouseX - e.x) + (prevMouseY - e.y) * (prevMouseY - e.y));
     if (dist > 10)
@@ -317,12 +326,22 @@ void Object::setApplicationState (ApplicationState applicationState)
     {
         case newObjectState:
         case editObjectState:
+            showButtons = false;
+            for (auto button : buttons)
+            {
+                button->setVisible (false);
+            }
+            leftBoundButton->setVisible (true);
+            rightBoundButton->setVisible (true);
             setZeroFlag();
             break;
         case normalAppState:
+            leftBoundButton->setVisible (false);
+            rightBoundButton->setVisible (false);
             break;
     };
     appState = applicationState;
+    resized();
 }
 
 void Object::setZero()

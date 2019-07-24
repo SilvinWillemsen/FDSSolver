@@ -42,7 +42,9 @@ public:
     bool isDynamic() { return dynamicBool; };
     void setDynamic (bool val) { dynamicBool = val; dynamic.setToggleState (val, dontSendNotification); };
     
-    void setCoeffName (String name) { coeffTextBox.setText(name); };
+    void setCoeffName (String name) { coeffTextBox.setText (name); };
+    void setCoeffValue (var value) { valueTextBox.setText (String(static_cast<int> (value))); };
+    
     TextEditor* getCoeffTextBoxPtr() { return &coeffTextBox; };
     
     void setCoeffPopupState (CoeffPopupState state) { coeffPopupState = state; };

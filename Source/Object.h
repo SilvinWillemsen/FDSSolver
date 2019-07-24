@@ -32,7 +32,7 @@ class Object    : public Component,
                     public Timer
 {
 public:
-    Object (String equationString, Equation stencil, std::vector<Equation> terms);
+    Object (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<BoundaryCondition> boundaries);
     ~Object();
 
     void paint (Graphics&) override;
@@ -53,6 +53,7 @@ public:
     void timerCallback() override;
     
     void setCoefficient (String name, double value) { coefficients.set(name, value); refreshCoefficientsFlag = true; };
+    
     void setCoefficients (NamedValueSet& coeffs) {
         for (int i = 0; i < coeffs.size(); ++i)
         {
@@ -62,6 +63,7 @@ public:
             coefficients.set (name, val);
         }
     };
+    
     NamedValueSet* getCoefficientPtr() { return &coefficients; };
     
     void setCoefficientTermIndex (Array<var>& varray) { coefficientTermIndex = varray; };
@@ -72,20 +74,25 @@ public:
     Action getAction() { return action; };
     
     void setZero();
+    
     void setZeroFlag() { setZFlag = true; }
     
     bool needsToBeZero() { return setZFlag; };
     
     void setCoefficientComponent (std::shared_ptr<CoefficientComponent> coeffComp) { coefficientComponents.push_back (coeffComp); };
+    
     std::vector<std::shared_ptr<CoefficientComponent>>& getCoefficientComponents() { return coefficientComponents; };
     
     void setApplicationState (ApplicationState applicationState);
     
     bool needsCoefficientsRefreshed() { return refreshCoefficientsFlag; };
     
+    // boundaries
+    BoundaryCondition getBoundary (bool left) { return left ? leftBoundary : rightBoundary; }
     void changeBoundaryCondition();
-    
     bool hasBoundaryChanged() { return BCChangeFlag; };
+    
+    
     
 private:
     String equationString;

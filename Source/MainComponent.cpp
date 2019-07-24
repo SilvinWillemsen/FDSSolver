@@ -288,6 +288,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                 case editCoeff:
                     addCoeffWindow->setCoeffPopupState (editingCoeff);
                     addCoeffWindow->setCoeffName (coefficientComponent->getName());
+                    addCoeffWindow->setCoeffValue (coefficientComponent->getValue());
                     addCoefficient();
                     break;
                     
@@ -329,11 +330,15 @@ bool MainComponent::createPhysicalModel()
         Object1D* newObject;
         if (appState != editObjectState)
         {
-            objects.add (new Object1D (equationString, eq, terms));
+            std::vector<BoundaryCondition> bounds (2, clamped);
+            objects.add (new Object1D (equationString, eq, terms, bounds));
             newObject = objects[objects.size() - 1];
         } else {
             int editedObjectIdx = objects.indexOf (editingObject);
-            objects.set (editedObjectIdx, new Object1D (equationString, eq, terms));
+            std::vector<BoundaryCondition> bounds;
+            bounds.push_back (editingObject->getBoundary (true));
+            bounds.push_back (editingObject->getBoundary (false));
+            objects.set (editedObjectIdx, new Object1D (equationString, eq, terms, bounds));
             newObject = objects[editedObjectIdx];
         }
         

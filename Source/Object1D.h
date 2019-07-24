@@ -19,9 +19,9 @@
 class Object1D    : public Object
 {
 public:
-    Object1D (String equationString, Equation stencil, std::vector<Equation> terms);
+    Object1D (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<BoundaryCondition> bounds);
     ~Object1D();
-
+    
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object1D)
 };

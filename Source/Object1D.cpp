@@ -12,7 +12,7 @@
 #include "Object1D.h"
 
 //==============================================================================
-Object1D::Object1D (String equationString, Equation stencil, std::vector<Equation> terms) : Object (equationString, stencil, terms)
+Object1D::Object1D (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<BoundaryCondition> boundaries) : Object (equationString, stencil, terms, boundaries)
 {
     // In your constructor, you should add any child components, and
     // initialise any special settings that your component needs.
