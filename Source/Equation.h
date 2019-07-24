@@ -79,12 +79,19 @@ public:
     int getStencilWidth() { return static_cast<int> (uCoeffs[0].size()); };
     int getTimeSteps() { return static_cast<int> (uCoeffs.size()); };
     int getNumPoints() { return N; };
-    void setNumPointsFromGridSpacing (double h) { N = floor(1.0/h); };
+    void setNumPointsFromGridSpacing (double hToSet) { h = hToSet; N = floor(1.0 / hToSet); };
+    
+    double getGridSpacing() { return h; };
+    
+    void incPowerOfhDivision() { ++powerOfhDivision; };
     
 private:
     
     std::vector<std::vector<double>> uCoeffs;
     
     int N = 0;
+    double h = 1;
+    
+    double powerOfhDivision = 0;
 };
 

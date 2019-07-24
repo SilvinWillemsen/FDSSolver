@@ -6,6 +6,8 @@
       <FILE id="Okc5f4" name="GUIDefines.h" compile="0" resource="0" file="Source/GUIDefines.h"/>
       <FILE id="hOhWuo" name="Object1D.cpp" compile="1" resource="0" file="Source/Object1D.cpp"/>
       <FILE id="Eeiiw2" name="Object1D.h" compile="0" resource="0" file="Source/Object1D.h"/>
+      <FILE id="zbfp0e" name="Object.cpp" compile="1" resource="0" file="Source/Object.cpp"/>
+      <FILE id="dQDYaI" name="Object.h" compile="0" resource="0" file="Source/Object.h"/>
       <FILE id="r6nf4q" name="AddCoefficient.cpp" compile="1" resource="0"
             file="Source/AddCoefficient.cpp"/>
       <FILE id="igajRE" name="AddCoefficient.h" compile="0" resource="0"

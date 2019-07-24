@@ -25,6 +25,11 @@ MainComponent::MainComponent()
     newButton->addListener (this);
     addAndMakeVisible (newButton);
     
+    muteButton = new TextButton();
+    muteButton->setButtonText("Mute");
+    muteButton->addListener (this);
+    addAndMakeVisible (muteButton);
+    
     addKeyListener (this);
     
     changeAppState (normalAppState);
@@ -79,6 +84,8 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
             object->setZero();
         if (object->needsCoefficientsRefreshed())
             object->refreshCoefficients();
+        if (object->hasBoundaryChanged())
+            object->changeBoundaryCondition();
     }
     
     if (appState != normalAppState)
@@ -99,8 +106,11 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
             output = output + object->getOutput (0.5);
             object->updateStates();
         }
-        channelData1[i] = clip(output);
-        channelData2[i] = clip(output);
+        if (!mute)
+        {
+            channelData1[i] = clip(output);
+            channelData2[i] = clip(output);
+        }
     }
     
 }
@@ -150,6 +160,9 @@ void MainComponent::resized()
     lowerButtonArea.reduce (GUIDefines::margin, GUIDefines::margin);
     newButton->setBounds (lowerButtonArea.removeFromLeft(100));
     lowerButtonArea.removeFromLeft (GUIDefines::margin);
+    
+    muteButton->setBounds (lowerButtonArea.removeFromRight(GUIDefines::buttonWidth));
+    lowerButtonArea.removeFromRight (GUIDefines::margin);
     cpuUsage.setBounds (lowerButtonArea.removeFromLeft(100));
     
     graphicsSlider.setBounds (lowerButtonArea.removeFromRight (200));
@@ -254,7 +267,6 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     repaint();
                     coefficientList.loadCoefficientsFromObject (object->getCoefficientComponents());
                     break;
-                
                 default:
                     break;
             }
@@ -315,14 +327,13 @@ bool MainComponent::createPhysicalModel()
     if (fdsSolver->solve (equationString, eq, &coefficients, coefficientTermIndex, terms))
     {
         Object1D* newObject;
-        double h = fdsSolver->calculateGridSpacing (eq, static_cast<double>(coefficients.getValueAt(0)));
         if (appState != editObjectState)
         {
-            objects.add (new Object1D (equationString, eq, h, terms));
+            objects.add (new Object1D (equationString, eq, terms));
             newObject = objects[objects.size() - 1];
         } else {
             int editedObjectIdx = objects.indexOf (editingObject);
-            objects.set (editedObjectIdx, new Object1D (equationString, eq, h, terms));
+            objects.set (editedObjectIdx, new Object1D (equationString, eq, terms));
             newObject = objects[editedObjectIdx];
         }
         
@@ -377,6 +388,11 @@ void MainComponent::buttonClicked (Button* button)
             coefficientList.emptyCoefficientList();
             changeAppState (normalAppState);
         }
+    }
+    
+    if (button == muteButton)
+    {
+        mute = !mute;
     }
     
 }

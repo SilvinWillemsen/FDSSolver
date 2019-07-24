@@ -212,25 +212,6 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
         }
     }
     
-//    for (int i = 0; i < terms.size(); ++i)
-//    {
-//        int operatorMult = 1;
-//        
-//        // no operator before first term
-//        if (i > 0 && operatorVect[i - 1] == 2)
-//        {
-//            operatorMult = -1;
-//        }
-//        if (i < equalsSignIdx)
-//        {
-//            Equation term = (terms[i]) * (coeffsPerTerm[i] * operatorMult);
-//            eq = eq + term;
-//        } else {
-//            Equation term = (terms[i]) * (coeffsPerTerm[i] * operatorMult);
-//            eq = eq - term;
-//        }
-//    }
-//    
     for (int i = 0; i < terms.size(); ++i)
     {
         int operatorMult = 1;
@@ -285,6 +266,8 @@ StringArray FDSsolver::getUsedCoeffs (String& equationString)
 double FDSsolver::calculateGridSpacing (Equation& eq, double coeff)
 {
     // stability analysis here //
+    
+    
     
 //    if (eq.getStencilWidth() == 5)
 //        h = sqrt(2 * static_cast<double>(coeff) * k);
@@ -391,7 +374,9 @@ Equation& FDSsolver::forwDiffX(Equation& eq)
     for (int i = 0; i < eq.getTimeSteps(); ++i)
         for (int j = eq.getStencilWidth() - 2; j >= 0; --j)
             eq.getUCoeffs(i)[j + 1] = eq.getUCoeffs(i)[j] - eq.getUCoeffs(i)[j + 1];
-    eq = eq * (1.0/h);
+    
+    if (!stabilityFlag)
+        eq = eq * (1.0 / h);
     
     return eq;
 }
@@ -401,7 +386,9 @@ Equation& FDSsolver::backDiffX (Equation& eq)
     for (int i = 0; i < eq.getTimeSteps(); ++i)
         for (int j = 1; j < eq.getStencilWidth(); ++j)
             eq.getUCoeffs(i)[j - 1] -= eq.getUCoeffs(i)[j];
-    eq = eq * (1.0/h);
+    
+    if (!stabilityFlag)
+        eq = eq * (1.0 / h);
     
     return eq;
 }
@@ -422,7 +409,9 @@ Equation& FDSsolver::centDiffX (Equation& eq)
             eq.getUCoeffs(i)[j] -= tmpSpace[j];
         }
     }
-    eq = eq * (1.0 / (2 * h));
+    if (!stabilityFlag)
+        eq = eq * (1.0 / (2 * h));
+    
     return eq;
 //    std::vector<double> tmpUNext (eq->getStencilWidth(), 0);
 //    std::vector<double> tmpU (eq->getStencilWidth(), 0);
@@ -463,7 +452,8 @@ Equation& FDSsolver::forwDiffT (Equation& eq)
         for (int j = 0; j < eq.getStencilWidth(); ++j)
             eq.getUCoeffs(i - 1)[j] = eq.getUCoeffs(i)[j] - eq.getUCoeffs(i - 1)[j];
 
-    eq = eq * (1.0 / k);
+    if (!stabilityFlag)
+        eq = eq * (1.0 / k);
     
     return eq;
 }
@@ -474,7 +464,8 @@ Equation& FDSsolver::backDiffT (Equation& eq)
         for (int j = 0; j < eq.getStencilWidth(); ++j)
             eq.getUCoeffs(i + 1)[j] -= eq.getUCoeffs(i)[j];
     
-    eq = eq * (1.0 / k);
+    if (!stabilityFlag)
+        eq = eq * (1.0 / k);
     
     return eq;
 }
@@ -495,7 +486,10 @@ Equation& FDSsolver::centDiffT (Equation& eq)
             eq.getUCoeffs(i)[j] -= tmpTime[i];
         }
     }
-    eq = eq * (1.0 / (2 * k));
+    
+    if (!stabilityFlag)
+        eq = eq * (1.0 / (2 * k));
+    
     return eq;
 }
 

@@ -94,10 +94,12 @@ private:
     bool repaintFlag = false;
     
     ScopedPointer<TextButton> newButton;
-    
+    ScopedPointer<TextButton> muteButton;
     Label cpuUsage;
     Label graphicsLabel;
     Slider graphicsSlider;
+    
+    bool mute = false;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

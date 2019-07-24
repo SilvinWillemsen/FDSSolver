@@ -32,6 +32,7 @@ public:
     bool checkSyntax (StringArray& tokens);
     
     bool solve (String& equationString, Equation& eq, NamedValueSet* coefficients, Array<var>& coefficientTermIndex, std::vector<Equation>& terms);
+   
     double calculateGridSpacing (Equation& eq, double coeffValue);
     
     StringArray getUsedCoeffs (String& equationString);
@@ -78,5 +79,6 @@ private:
     
     int stencilSize;
     
+    bool stabilityFlag = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FDSsolver)
 };
