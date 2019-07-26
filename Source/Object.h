@@ -17,7 +17,11 @@
 #include <immintrin.h>
 //==============================================================================
 /*
+ Base class for all objects. Derived classes are currently:
+ Object1D,
+ Object1DAVX
 */
+
 
 enum BoundaryCondition
 {
@@ -34,73 +38,61 @@ class Object    : public Component,
 public:
     Object (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<BoundaryCondition> boundaries);
     ~Object();
-
-    void paint (Graphics&) override;
-    void resized() override;
     
-    String getEquationString() { return equationString; };
+    void buttonClicked (Button* button) override;
     
-    Path visualiseState();
-    void calculateFDS();
-    
-    void updateStates();
-    
-    void excite();
-    double getOutput (double ratio) { int idx = floor (N * ratio); return u[1][idx]; };
+    // Mouse-event linked to exciting the PM
     void mouseDown (const MouseEvent& e) override;
-    void mouseMove (const MouseEvent& e) override;
     
+    // Functions linked to showing and hiding buttons
+    void mouseMove (const MouseEvent& e) override;
     void timerCallback() override;
     
+    //// Functions that need to be implemented (overridden) by the derived classes ////
+    
+    virtual void calculateFDS() = 0;
+    virtual double getOutput (double ratio) = 0;
+    virtual void updateStates() = 0;
+    
+    virtual void excite() {};
+    virtual void setZero() {};
+    
+    //// Functions valid for all objects ////
+    
+    // Return the equation
+    String getEquationString() { return equationString; };
+    
+    // Set one coefficient
     void setCoefficient (String name, double value) { coefficients.set(name, value); refreshCoefficientsFlag = true; };
     
-    void setCoefficients (NamedValueSet& coeffs) {
-        for (int i = 0; i < coeffs.size(); ++i)
-        {
-            String name = coeffs.getName (i).toString();
-            var val = coeffs.getValueAt (i);
-//            coefficients.set (coeffs.getName (i), coeffs.getValueAt (i));
-            coefficients.set (name, val);
-        }
-    };
-    
-    NamedValueSet* getCoefficientPtr() { return &coefficients; };
+    // Set a group of coefficients
+    void setCoefficients (NamedValueSet& coeffs) { for (int i = 0; i < coeffs.size(); ++i) coefficients.set (coeffs.getName (i).toString(), coeffs.getValueAt (i)); };
     
     void setCoefficientTermIndex (Array<var>& varray) { coefficientTermIndex = varray; };
     void refreshCoefficients();
     
-    void buttonClicked (Button* button) override;
-    
+    // Is needed to tell the main component the reason for the callback
     Action getAction() { return action; };
     
-    void setZero();
-    
+    // Functions and flags checked at audio rate (OUTSIDE of the bufferloop)
     void setZeroFlag() { setZFlag = true; }
-    
     bool needsToBeZero() { return setZFlag; };
+    bool needsCoefficientsRefreshed() { return refreshCoefficientsFlag; };
     
     void setCoefficientComponent (std::shared_ptr<CoefficientComponent> coeffComp) { coefficientComponents.push_back (coeffComp); };
-    
     std::vector<std::shared_ptr<CoefficientComponent>>& getCoefficientComponents() { return coefficientComponents; };
     
     void setApplicationState (ApplicationState applicationState);
     
-    bool needsCoefficientsRefreshed() { return refreshCoefficientsFlag; };
-    
-    // boundaries
-    BoundaryCondition getBoundary (bool left) { return left ? leftBoundary : rightBoundary; }
-    void changeBoundaryCondition();
+    // Boundaries
+    BoundaryCondition getBoundary (int idx) { return boundaryConditions[idx]; }
     bool hasBoundaryChanged() { return BCChangeFlag; };
     
-    
-    
-private:
-    String equationString;
-    
+protected:
     std::vector<Equation> terms;
-    
-    // pointers to the different states
-    std::vector<double*> u;
+    std::vector<BoundaryCondition> boundaryConditions;
+
+    String equationString;
     
     Equation stencil;
     int numTimeSteps;
@@ -109,12 +101,7 @@ private:
     
     int uNextPtrIdx = 0;
     
-    std::vector<std::vector<double>> uVecs;
-    
     int stencilIdxStart = 0;
-    
-    BoundaryCondition leftBoundary = clamped;
-    BoundaryCondition rightBoundary = clamped;
     
     bool excited = false;
     
@@ -128,9 +115,6 @@ private:
     TextButton* muteButton;
     
     OwnedArray<TextButton> boundaryButtons;
-    
-    TextButton* leftBoundButton;
-    TextButton* rightBoundButton;
 
     bool showButtons = false;
     
@@ -147,7 +131,7 @@ private:
     bool refreshCoefficientsFlag = false;
     
     bool BCChangeFlag = false;
-    bool left = false;
+    int boundaryChangeIdx = -1; // for 1D object left = 0, right = 1.
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object)
 };

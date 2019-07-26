@@ -327,18 +327,18 @@ bool MainComponent::createPhysicalModel()
     std::vector<Equation> terms;
     if (fdsSolver->solve (equationString, eq, &coefficients, coefficientTermIndex, terms))
     {
-        Object1D* newObject;
+        OBJECT1D* newObject;
         if (appState != editObjectState)
         {
             std::vector<BoundaryCondition> bounds (2, clamped);
-            objects.add (new Object1D (equationString, eq, terms, bounds));
+            objects.add (new OBJECT1D (equationString, eq, terms, bounds));
             newObject = objects[objects.size() - 1];
         } else {
             int editedObjectIdx = objects.indexOf (editingObject);
             std::vector<BoundaryCondition> bounds;
             bounds.push_back (editingObject->getBoundary (true));
             bounds.push_back (editingObject->getBoundary (false));
-            objects.set (editedObjectIdx, new Object1D (equationString, eq, terms, bounds));
+            objects.set (editedObjectIdx, new OBJECT1D (equationString, eq, terms, bounds));
             newObject = objects[editedObjectIdx];
         }
         
@@ -406,15 +406,6 @@ void MainComponent::sliderValueChanged (Slider* slider)
 {
     if (slider == &graphicsSlider)
         startTimerHz (slider->getValue());
-//    coefficients.set (slider->getName(), slider->getValue());
-//    for (auto object : objects)
-//    {
-//        if (object->getCoefficientPtr()->contains (slider->getName()))
-//        {
-//            object->getCoefficientPtr()->set (slider->getName(), slider->getValue());
-//            object->refreshCoefficients();
-//        }
-//    }
 }
 
 void MainComponent::refresh()
@@ -432,8 +423,9 @@ void MainComponent::refresh()
 void MainComponent::timerCallback()
 {
     for (int i = 0; i < objects.size(); ++i)
+    {
         objects[i]->repaint();
-    
+    }
     double cpu = static_cast<int>(deviceManager.getCpuUsage() * 1000.0) / 10.0;
     cpuUsage.setText ("CPU: " + String (cpu) + " %", dontSendNotification);
     

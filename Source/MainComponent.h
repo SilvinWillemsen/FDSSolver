@@ -14,7 +14,12 @@
 #include "CoefficientList.h"
 #include "FDSsolver.h"
 #include "AddCoefficient.h"
-#include "Object1D.h"
+
+#ifdef AVX_SUPPORTED
+    #include "Object1DAVX.h"
+#else
+    #include "Object1D.h"
+#endif
 
 //==============================================================================
 /*
@@ -84,13 +89,13 @@ private:
 
     NamedValueSet coefficients;
     
-    OwnedArray<Object1D> objects;
+    OwnedArray<OBJECT1D> objects;
     
     ApplicationState appState;
     CoeffPopupState coeffPopupState = normalCoeffState;
     
-    Object1D* editingObject = nullptr;
-    Object1D* currentlySelectedObject = nullptr;
+    OBJECT1D* editingObject = nullptr;
+    OBJECT1D* currentlySelectedObject = nullptr;
     bool repaintFlag = false;
     
     ScopedPointer<TextButton> newButton;

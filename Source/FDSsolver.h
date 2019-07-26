@@ -31,13 +31,15 @@ public:
     bool checkEquation (String& equation);
     bool checkSyntax (StringArray& tokens);
     
+    // Main function for solving the equation and returning the stencil and the terms
     bool solve (String& equationString, Equation& eq, NamedValueSet* coefficients, Array<var>& coefficientTermIndex, std::vector<Equation>& terms);
    
-    double calculateGridSpacing (Equation& eq, double coeffValue);
+    // Stability analysis
+    double calculateGridSpacing (StringArray& tokens, NamedValueSet* coefficients, Equation& eq, int numTerms);
     
     StringArray getUsedCoeffs (String& equationString);
     
-    // Spatial differences
+    // Spatial difference operators
     Equation& forwDiffX (Equation& equation);
     Equation& backDiffX (Equation& equation);
     Equation& centDiffX (Equation& equation);
@@ -45,20 +47,18 @@ public:
     Equation& secondOrderX (Equation& equation) { forwDiffX (equation); backDiffX(equation); return equation; }
     Equation& fourthOrderX (Equation& equation) { secondOrderX (equation); secondOrderX(equation); return equation;  }
     
+    // Temporal difference operators
     Equation& forwDiffT (Equation& equation);
     Equation& backDiffT (Equation& equation);
     Equation& centDiffT (Equation& equation);
     
     Equation& secondOrderT (Equation& equation) { forwDiffT (equation); backDiffT (equation); return equation; }
     
-    void applyOperator (Equation* equation, void(*)(Equation*));
-    
     bool checkAllowedCharacters (int prevTermType, StringArray& tokens, bool& hasEqualsSign);
     
     std::vector<std::vector<double>> getStencil (Equation& eq);
     int getStencilWidth (String& equationString, bool checkSpace);
     
-//    std::vector<Equation> getTerms() { return terms; };
     Array<var>& getCoeffTermIndex() { return coefficientTermIndex; };
     
     bool checkIfCoefficientExists (String& coeff);

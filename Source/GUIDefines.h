@@ -11,9 +11,13 @@
 #pragma once
 #include "../JuceLibraryCode/JuceHeader.h"
 
-#if __AVX2__
-#define AVX_SUPPORTED
-#endif
+//#if __AVX2__
+//#define AVX_SUPPORTED
+//#define OBJECT1D Object1DAVX
+//#include <immintrin.h>
+//#else
+#define OBJECT1D Object1D
+//#endif
 
 class StringCode
 {

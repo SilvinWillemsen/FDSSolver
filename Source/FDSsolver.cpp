@@ -117,7 +117,7 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
     if (GUIDefines::debug)
         h = 1;
     else
-        calculateGridSpacing (eq, coeffValues->getValueAt(0));
+        calculateGridSpacing (tokens, coeffValues, eq, numTerms);
     
     eq.setNumPointsFromGridSpacing (h);
     h = 1.0 / (static_cast<double> (eq.getNumPoints()));
@@ -263,16 +263,136 @@ StringArray FDSsolver::getUsedCoeffs (String& equationString)
     return usedCoeffs;
 }
 
-double FDSsolver::calculateGridSpacing (Equation& eq, double coeff)
+double FDSsolver::calculateGridSpacing (StringArray& tokens, NamedValueSet* coeffValues, Equation& eq, int numTerms)
 {
-    // stability analysis here //
-    
-    
-    
+//    // stability analysis here //
+//    int idx = -1;
+//    bool newTermFlag = true;
+//    Equation zCoeffs (eq.getTimeSteps(), 1);
+//    std::vector<Equation> terms;
+//    terms.reserve (numTerms);
+//    int equalsSignIdx;
+//
+//    std::vector<int> operatorVect (numTerms - 1, 0);
+//
+//    for (int i = 0; i < tokens.size(); ++i)
+//    {
+//        String firstChar = tokens[i].substring(0, 1);
+//
+//        const char* test = static_cast<const char*> (firstChar.toUTF8());
+//        int firstInt = std::isdigit(*test) ? firstChar.getIntValue() : 9;
+//
+//        if (newTermFlag)
+//        {
+//            terms.push_back (Equation (eq.getTimeSteps(), eq.getStencilWidth(), true));
+//            ++idx;
+//            newTermFlag = false;
+//        }
+//        switch (firstInt)
+//        {
+//            case 1:
+//                operatorVect[idx-1] = tokens[i].substring(2, 3).getIntValue();
+//                if (tokens[i].getIntValue() == 100)
+//                {
+//                    equalsSignIdx = idx;
+//                }
+//                break;
+//            case 2:
+//
+//                switch(tokens[i].getIntValue())
+//            {
+//                case 200:
+//                    ++zCoeffs.getUCoeffs (0)[0];
+//                    --zCoeffs.getUCoeffs (1)[0];
+//                    break;
+//                case 201:
+//                    ++zCoeffs.getUCoeffs (1)[0];
+//                    --zCoeffs.getUCoeffs (2)[0];
+//                    break;
+//                case 202:
+//                    ++zCoeffs.getUCoeffs (0)[0];
+//                    --zCoeffs.getUCoeffs (2)[0];
+//                    break;
+//                case 203:
+//                    ++zCoeffs.getUCoeffs (0)[0];
+//                    zCoeffs.getUCoeffs (1)[0] -= 2;
+//                    ++zCoeffs.getUCoeffs (2)[0];
+//                    break;
+//                case 204:
+//                    forwDiffX (terms[idx]);
+//                    break;
+//                case 205:
+//                    backDiffX (terms[idx]);
+//                    break;
+//                case 206:
+//                    centDiffX (terms[idx]);
+//                    break;
+//                case 207:
+//                    secondOrderX (terms[idx]);
+//                    break;
+//                case 208:
+//                    fourthOrderX (terms[idx]);
+//                    break;
+//            }
+//                break;
+//            case 3:
+//                newTermFlag = true;
+//                break;
+//            case 9:
+//
+//                if (tokens[i].getIntValue() == 901)
+//                {
+//                    coefficientTermIndex[idx][0] = -1;
+//                    coeffsPerTerm[idx] *= -1.0;
+//                } else {
+//                    if (static_cast<int> (coefficientTermIndex[idx][0]) == 1)
+//                        coefficientTermIndex[idx][0] = tokens[i].upToFirstOccurrenceOf ("-", false, true);
+//                    else
+//                        coefficientTermIndex[idx].append (tokens[i].upToFirstOccurrenceOf ("-", false, true));
+//
+//                    auto valuePtr =  coeffValues->getVarPointer (tokens[i].upToFirstOccurrenceOf ("-", false, true));
+//                    if (valuePtr == NULL)
+//                    {
+//                        std::cout << "Coefficient was deleted" << std::endl;
+//                        return false;
+//                    }
+//                    coeffsPerTerm[idx] *= static_cast<double> (*valuePtr);
+//                }
+//        }
+//    }
+//
+//    for (int i = 0; i < coefficientTermIndex.size(); ++i)
+//    {
+//        for (int j = 0; j < coefficientTermIndex[i].size(); ++j)
+//        {
+//            String typeString = coefficientTermIndex[i][j].isInt() ? "integer" : "String";
+//            std::cout << "Entry is " << typeString << ". Value = " << coefficientTermIndex[i][j].toString() << std::endl;
+//        }
+//    }
+//
+//    for (int i = 0; i < terms.size(); ++i)
+//    {
+//        int operatorMult = 1;
+//
+//        // no operator before first term
+//        if (i > 0 && operatorVect[i - 1] == 2)
+//        {
+//            operatorMult = -1;
+//        }
+//        if (i < equalsSignIdx)
+//            terms[i] = terms[i] * operatorMult;
+//        else
+//            terms[i] = terms[i] * (operatorMult * -1);
+//        Equation term = terms[i] * coeffsPerTerm[i];
+//        std::cout << coeffsPerTerm[i] << std::endl;
+//        eq = eq + term;
+//    }
+//
+//
 //    if (eq.getStencilWidth() == 5)
 //        h = sqrt(2 * static_cast<double>(coeff) * k);
 //    else if (eq.getStencilWidth() == 3)
-        h = sqrt (static_cast<double> (coeff)) * k;
+    h = sqrt (static_cast<double> (coeffValues[0].getValueAt (0))) * k;
     
     return h;
 }
@@ -361,10 +481,6 @@ bool FDSsolver::checkAllowedCharacters (int prevTermType, StringArray& tokens, b
         prevTermType = firstInt;
     }
     return true;
-}
-void FDSsolver::applyOperator(Equation *equation, void (*)(Equation *))
-{
-    
 }
 
 // OPERATORS //
