@@ -3,11 +3,15 @@
 <JUCERPROJECT id="yHXHd5" name="FDSsolver" projectType="guiapp" jucerVersion="5.4.1">
   <MAINGROUP id="iOQDaH" name="FDSsolver">
     <GROUP id="{C69A153F-C0F4-07C6-ECD0-F265B52BC998}" name="Source">
+      <FILE id="fostV9" name="updateEqGenerator.c" compile="1" resource="0"
+            file="../../Desktop/updateEqGenerator.c"/>
       <FILE id="Okc5f4" name="GUIDefines.h" compile="0" resource="0" file="Source/GUIDefines.h"/>
       <FILE id="X964mO" name="Object1DAVX.cpp" compile="1" resource="0" file="Source/Object1DAVX.cpp"/>
       <FILE id="HYq7Pk" name="Object1DAVX.h" compile="0" resource="0" file="Source/Object1DAVX.h"/>
       <FILE id="hOhWuo" name="Object1D.cpp" compile="1" resource="0" file="Source/Object1D.cpp"/>
       <FILE id="Eeiiw2" name="Object1D.h" compile="0" resource="0" file="Source/Object1D.h"/>
+      <FILE id="sJs71x" name="Object0D.cpp" compile="1" resource="0" file="Source/Object0D.cpp"/>
+      <FILE id="sEYRgk" name="Object0D.h" compile="0" resource="0" file="Source/Object0D.h"/>
       <FILE id="zbfp0e" name="Object.cpp" compile="1" resource="0" file="Source/Object.cpp"/>
       <FILE id="dQDYaI" name="Object.h" compile="0" resource="0" file="Source/Object.h"/>
       <FILE id="r6nf4q" name="AddCoefficient.cpp" compile="1" resource="0"

@@ -85,6 +85,8 @@ public:
     
     void incPowerOfhDivision() { ++powerOfhDivision; };
     
+    bool isSymmetric();
+    
 private:
     
     std::vector<std::vector<double>> uCoeffs;

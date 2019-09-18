@@ -13,14 +13,15 @@
 
 //==============================================================================
 Object::Object (String equationString,
-                    Equation stencil,
-                    std::vector<Equation> termsInput,
-                    std::vector<BoundaryCondition> boundaries) : equationString (equationString),
-                                                        stencil (stencil),
-                                                        h (stencil.getGridSpacing()),
-                                                        N (1.0 / h)
+                Equation stencil,
+                std::vector<Equation> termsInput,
+                int numBoundaries) : stencil (stencil),
+                                     equationString (equationString),
+                                     h (stencil.getGridSpacing()),
+                                     N (1.0 / h)
 {
     // Set boundary conditions
+    std::vector<BoundaryCondition> boundaries (numBoundaries, clamped);
     for (int i = 0; i < boundaries.size(); ++i)
     {
         boundaryConditions.push_back (boundaries[i]);
@@ -36,31 +37,23 @@ Object::Object (String equationString,
     for (int i = 0; i < termsInput.size(); ++i)
         terms.push_back (termsInput[i]);
     
-    numTimeSteps = stencil.getTimeSteps();
-    
     stencilIdxStart = (stencil.getStencilWidth() - 1) / 2.0; // should be an integer
     
     // GUI STUFF
     buttons.add (new TextButton("Mute"));
-    muteButton = buttons[0];
-    
-    muteButton->setButtonText ("M");
-    muteButton->addListener (this);
-    addAndMakeVisible (muteButton);
+    buttons[0]->setButtonText ("M");
+    buttons[0]->addListener (this);
+    addAndMakeVisible (buttons[0]);
     
     buttons.add (new TextButton("Edit"));
-    editButton = buttons[1];
-    
-    editButton->setButtonText ("E");
-    editButton->addListener (this);
-    addAndMakeVisible (editButton);
+    buttons[1]->setButtonText ("E");
+    buttons[1]->addListener (this);
+    addAndMakeVisible (buttons[1]);
     
     buttons.add (new TextButton("Remove"));
-    removeButton = buttons[2];
-    
-    removeButton->setButtonText (String (CharPointer_UTF8 ("\xc3\x97")));
-    removeButton->addListener (this);
-    addAndMakeVisible (removeButton);
+    buttons[2]->setButtonText (String (CharPointer_UTF8 ("\xc3\x97")));
+    buttons[2]->addListener (this);
+    addAndMakeVisible (buttons[2]);
 }
 
 Object::~Object()
@@ -69,12 +62,15 @@ Object::~Object()
 
 void Object::buttonClicked (Button* button)
 {
+    // Caputure return key
     KeyPress key = KeyPress (KeyPress::returnKey);
     if (key.KeyPress::isCurrentlyDown())
     {
         button->setState (Button::ButtonState::buttonNormal);
         return;
     }
+    
+    // Boundary buttons
     for (int i = 0; i < boundaryButtons.size(); ++i)
     {
         if (button == boundaryButtons[i])
@@ -86,15 +82,16 @@ void Object::buttonClicked (Button* button)
         }
     }
     
-    if (button == muteButton)
+    // Mute, edit and remove buttons
+    if (button == buttons[0])
     {
         action = muteObject;
     }
-    else if (button == editButton)
+    else if (button == buttons[1])
     {
         action = editObject;
     }
-    else if (button == removeButton)
+    else if (button == buttons[2])
     {
         action = removeObject;
     }
@@ -105,6 +102,8 @@ void Object::mouseDown (const MouseEvent& e)
 {
     if (appState != normalAppState)
         return;
+    xLoc = e.x;
+    yLoc = e.y;
     action = objectClicked;
     sendChangeMessage();
     excited = true;
@@ -160,11 +159,12 @@ void Object::refreshCoefficients()
 {
     // reset stencil
     stencil = Equation (stencil.getTimeSteps(), stencil.getStencilWidth());
+    stencilVectorForm.clear();
+    stencilVectorForm.shrink_to_fit();
     
     for (int i = 0; i < terms.size(); ++i)
     {
-        Equation term (stencil.getTimeSteps(), stencil.getStencilWidth());
-        term = term + terms[i];
+        Equation term = terms[i];
         for (int j = 0; j < coefficientTermIndex[i].size(); ++j)
         {
             if (coefficientTermIndex[i][j].isString())
@@ -195,6 +195,21 @@ void Object::refreshCoefficients()
     if (!GUIDefines::debug)
         stencil = stencil / (stencil.getUCoeffs(0)[uNextIdx]);
     
+    curTimeStep.resize (stencil.getStencilWidth(), 0.0);
+    prevTimeStep.resize (stencil.getStencilWidth(), 0.0);
+    for (int j = 0; j < stencil.getStencilWidth(); ++j)
+    {
+        curTimeStep[j] = stencil.getUCoeffAt(1, j);
+        prevTimeStep[j] = stencil.getUCoeffAt(2, j);
+    }
+    isSymmetric = stencil.isSymmetric();
+    
+    stencilVectorForm.reserve (stencil.getTimeSteps() * stencil.getStencilWidth());
+    for (int j = 1; j < stencil.getTimeSteps(); ++j)
+        for (int i = 0; i < stencil.getStencilWidth(); ++i)
+            stencilVectorForm.push_back(stencil.getUCoeffAt(j, i));
+            
+    stencilVectorForm.shrink_to_fit();
     refreshCoefficientsFlag = false;
 }
 
@@ -220,4 +235,43 @@ void Object::setApplicationState (ApplicationState applicationState)
     };
     appState = applicationState;
     resized();
+}
+
+void Object::updateEqGenerator(String& eqString)
+{
+    void *handle;
+    char *error;
+    
+    const char* eq = static_cast<const char*>(eqString.toUTF8());
+    
+    
+    FILE *fd= fopen("code.c", "w");
+    
+    fprintf(fd, "#include <stdio.h>\n"
+                "void updateEq(double* uNext, double* u, double* uPrev, double* coeffs)\n"
+                "{\n"
+                "%s\n"
+                "}", eq);
+    fclose(fd);
+    
+    system ("clang -shared -undefined dynamic_lookup -O3 -o generated.so code.c -g");
+    
+    handle = dlopen ("generated.so", RTLD_LAZY);
+    
+    if (!handle)
+    {
+        fprintf (stderr, "%s\n", dlerror());
+        exit(1);
+    }
+    
+    dlerror();    /* Clear any existing error */
+    *(void **)(&updateEq) = dlsym (handle, "updateEq");
+//    &updateEq = dlsym(handle, "updateEq");
+    if ((error = dlerror()) != NULL)  {
+        fprintf (stderr, "%s\n", error);
+        exit(1);
+    }
+    
+//    updateEq("Hi!");
+//    dlclose(handle);
 }

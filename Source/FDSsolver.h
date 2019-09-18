@@ -56,7 +56,6 @@ public:
     
     bool checkAllowedCharacters (int prevTermType, StringArray& tokens, bool& hasEqualsSign);
     
-    std::vector<std::vector<double>> getStencil (Equation& eq);
     int getStencilWidth (String& equationString, bool checkSpace);
     
     Array<var>& getCoeffTermIndex() { return coefficientTermIndex; };
@@ -80,5 +79,6 @@ private:
     int stencilSize;
     
     bool stabilityFlag = false;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FDSsolver)
 };

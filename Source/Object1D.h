@@ -11,7 +11,7 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "Object1D.h"
+#include "GUIDefines.h"
 #include "Object.h"
 //==============================================================================
 /*
@@ -19,12 +19,13 @@
 class Object1D    : public Object
 {
 public:
-    Object1D (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<BoundaryCondition> bounds);
+    Object1D (String equationString, Equation stencil, std::vector<Equation> terms);
     ~Object1D();
     
     void paint (Graphics& g) override;
     void resized() override;
     
+    void createUpdateEq() override;
     void calculateFDS() override;
     double getOutput (double ratio) override { int idx = floor (N * ratio); return u[1][idx]; };
     void updateStates() override;
@@ -33,8 +34,8 @@ public:
     void setZero() override;
     
     Path visualiseState();
-    void changeBoundaryCondition();
-    
+    void changeBoundaryCondition() override;
+
 private:
     // pointers to the different states
     std::vector<double*> u;

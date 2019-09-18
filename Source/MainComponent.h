@@ -15,6 +15,7 @@
 #include "FDSsolver.h"
 #include "AddCoefficient.h"
 
+#include "Object0D.h"
 #ifdef AVX_SUPPORTED
     #include "Object1DAVX.h"
 #else
@@ -55,7 +56,7 @@ public:
     bool createPhysicalModel();
     bool editPhysicalModel();
     
-    void addCoefficient();
+    void addCoefficient (bool automatic = false, String nme = "", double val = 0.0, bool isDynamic = false);
     
     void refresh();
     
@@ -67,6 +68,9 @@ public:
     
     void changeAppState (ApplicationState applicationState);
     
+    void createString();
+    void createMassSpring();
+    
 private:
     //==============================================================================
     // Your private member variables go here...
@@ -77,7 +81,7 @@ private:
     double fs;
     int bufferSize;
     
-    OwnedArray<TextButton> coeffButtons;
+    OwnedArray<TextButton> modelButtons;
     OwnedArray<Slider> coeffSliders;
 
     ScopedPointer<AddCoefficient> addCoeffWindow;
@@ -89,13 +93,13 @@ private:
 
     NamedValueSet coefficients;
     
-    OwnedArray<OBJECT1D> objects;
+    OwnedArray<Object> objects;
     
     ApplicationState appState;
     CoeffPopupState coeffPopupState = normalCoeffState;
     
-    OBJECT1D* editingObject = nullptr;
-    OBJECT1D* currentlySelectedObject = nullptr;
+    Object* editingObject = nullptr;
+    Object* currentlySelectedObject = nullptr;
     bool repaintFlag = false;
     
     ScopedPointer<TextButton> newButton;
@@ -105,6 +109,8 @@ private:
     Slider graphicsSlider;
     
     bool mute = false;
+    
+    std::vector<__m256d> testVec {100};
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

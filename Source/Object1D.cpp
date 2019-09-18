@@ -12,14 +12,14 @@
 #include "Object1D.h"
 
 //==============================================================================
-Object1D::Object1D (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<BoundaryCondition> boundaries) : Object (equationString, stencil, terms, boundaries)
+Object1D::Object1D (String equationString, Equation stencil, std::vector<Equation> terms) : Object (equationString, stencil, terms, 2)
 {
     uVecs.reserve (stencil.getTimeSteps()); //resize according to amount of vectors in stencil
     
     for (int i = 0; i < stencil.getTimeSteps(); ++i)
         uVecs.push_back (std::vector<double> (N, 0));
     
-    u.resize (numTimeSteps);
+    u.resize (stencil.getTimeSteps());
     
     for (int i = 0; i < u.size(); ++i)
         u[i] = &uVecs[i][0];
@@ -45,11 +45,11 @@ void Object1D::resized()
         buttonArea.removeFromLeft (GUIDefines::horStateArea * getWidth());
         buttonArea.removeFromLeft (GUIDefines::margin);
         
-        muteButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+        buttons[0]->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
         buttonArea.removeFromTop (GUIDefines::margin * 0.5);
-        editButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+        buttons[1]->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
         buttonArea.removeFromTop (GUIDefines::margin * 0.5);
-        removeButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+        buttons[2]->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
     }
     else if (appState != normalAppState)
     {
@@ -60,18 +60,48 @@ void Object1D::resized()
     }
 }
 
+void Object1D::createUpdateEq()
+{
+    UEB ueb;
+    if (isSymmetric)
+    {
+        std::cout << "symmetric!" << std::endl;
+    }
+    
+    String code = ueb.u(0) + " = ";
+    int halfStencilWidth = (stencil.getStencilWidth() - 1) / 2.0;
+    for (int j = 1; j < stencil.getTimeSteps(); ++j)
+    {
+        for (int i = 0; i < halfStencilWidth; ++i)
+        {
+            if (stencil.getUCoeffAt(j, i) != 0)
+                code += "- coeffs[" + String(i) + "] * (" + ueb.u(j, i - halfStencilWidth) + " + " + ueb.u(j, i + halfStencilWidth) + ")";
+        }
+        if (stencil.getUCoeffAt(j, halfStencilWidth) != 0)
+            code += " - coeffs[" + String (halfStencilWidth + (j - 1) * stencil.getStencilWidth()) + "] * " + ueb.u(j);
+    }
+    code += ";";
+    // wrap update in a forloop
+    String forLoop = ueb.forLoop (code, boundaryConditions[0] ? 1 : 2, N);
+    updateEqGenerator(forLoop);
+}
+
 void Object1D::calculateFDS()
 {
-    int lowerBound = boundaryConditions[0] == simplySupported ? 1 : 2;
-    int upperBound = boundaryConditions[1] == simplySupported ? N : N - 1;
-    for (int l = lowerBound; l < upperBound; ++l)
-    {
-        u[0][l] = 0;
-        for (int j = 0; j < stencil.getStencilWidth(); ++j)
-        {
-            u[0][l] = u[0][l] - stencil[1][j] * u[1][l - stencilIdxStart + j] - stencil[2][j] * u[2][l - stencilIdxStart + j];
-        }
-    }
+    updateEq (u[0], u[1], u[2], &stencilVectorForm[0]);
+    
+///// OLD STUFF /////
+//    std::cout << "wait" << std::endl;
+//    for (int l = (boundaryConditions[0] == simplySupported ? 1 : 2);
+//             l < (boundaryConditions[1] == simplySupported ? N : N - 1); ++l)
+//    {
+//        u[0][l] = 0;
+//        for (int j = 0; j < stencil.getStencilWidth(); ++j)
+//        {
+////            u[0][l] = u[0][l] - stencil[1][j] * u[1][l - stencilIdxStart + j] - stencil[2][j] * u[2][l - stencilIdxStart + j];
+//            u[0][l] = u[0][l] - (curTimeStep[j] * u[1][l - stencilIdxStart + j] + prevTimeStep[j] * u[2][l - stencilIdxStart + j]);
+//        }
+//    }
 }
 
 void Object1D::updateStates()
@@ -89,9 +119,9 @@ void Object1D::excite()
     if (excited)
     {
         excited = false;
-        double width = floor((N * 2.0) / 5.0) / 2.0;
-        int loc = floor(N / 2.0);
-        int startIdx = loc - width / 2.0;
+        int width = floor ((N * 2.0) / 5.0) / 2.0;
+        int loc = floor (N * static_cast<float>(getXLoc()) / static_cast<float>(getWidth()));
+        int startIdx = clamp (loc - width / 2.0, simplySupported ? 1 : 2, simplySupported ? N-1-width : N-2-width);
         for (int i = 0; i < width; ++i)
         {
             double val = (1 - cos (2 * double_Pi * i / width)) * 0.5;

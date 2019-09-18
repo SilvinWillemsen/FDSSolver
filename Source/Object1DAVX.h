@@ -11,6 +11,7 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "GUIDefines.h"
 #include "Object.h"
 
 //==============================================================================
@@ -19,7 +20,7 @@
 class Object1DAVX    : public Object
 {
 public:
-    Object1DAVX (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<BoundaryCondition> boundaries);
+    Object1DAVX (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<__m256d> testVec);
     ~Object1DAVX();
 
     void paint (Graphics& g) override;
@@ -38,14 +39,15 @@ public:
 private:
     // pointers to the different states
     std::vector<__m256d*> u;
+    
     const __m256d zeroval = _mm256_set_pd (0.0, 0.0, 0.0, 0.0);
     
     // states
-    std::vector<std::vector<__m256d>> uVecs;
-    
-    std::vector<std::vector<__m256d>> uVecsPlus1;
-    std::vector<std::vector<__m256d>> uVecsMin1;
+    std::vector<std::vector<double>> uVecs;
     
     int numAVX = 0; // amount of avx indices
+    
+    std::vector<std::vector<__m256d>> uVecsAVX; // [temporal index][AVX index]
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object1DAVX)
 };

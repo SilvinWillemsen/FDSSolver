@@ -59,3 +59,19 @@ void Equation::showStencil()
     }
     
 }
+
+bool Equation::isSymmetric()
+{
+    // for half of the stencilWidth (minus the center)
+    for (int i = 0; i < (getStencilWidth() - 1) / 2.0; ++i)
+    {
+        // for all time steps
+        for (int j = 0; j < getTimeSteps(); ++j)
+        {
+            // check whether the left side of the stencil is equal to the right side
+            if (getUCoeffAt(j, i) != getUCoeffAt(j, getStencilWidth()-1-i))
+                return false;
+        }
+    }
+    return true;
+}

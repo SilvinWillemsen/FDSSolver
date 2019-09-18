@@ -12,28 +12,21 @@
 #include "Object1DAVX.h"
 
 //==============================================================================
-Object1DAVX::Object1DAVX (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<BoundaryCondition> boundaries) : Object (equationString, stencil, terms, boundaries)
+Object1DAVX::Object1DAVX (String equationString,
+                          Equation stencil,
+                          std::vector<Equation> terms,
+                          std::vector<__m256d> testVec) : Object (equationString, stencil, terms, 2),
+                                                          numAVX ((N + GUIDefines::AVXnum - 1) / static_cast<double> (GUIDefines::AVXnum))
 {
-    // In your constructor, you should add any child components, and
-    // initialise any special settings that your component needs.
-    numAVX = N / 4;
-    if (N % 4 != 0)
-        ++numAVX;
+    uVecsAVX = std::vector<std::vector<__m256d>> (std::vector<std::vector<__m256d>>(stencil.getTimeSteps(), testVec));
     
-    int tmpNumAVX = numAVX;
-    int tmpTimeSteps = stencil.getTimeSteps();
-    std::vector<__m256d> zerovec;
-    zerovec.resize (tmpNumAVX, zeroval);
-    uVecs.resize (tmpTimeSteps, zerovec); //resize using zeroval
-    uVecsPlus1.resize (tmpTimeSteps - 1, zerovec);
-    uVecsMin1.resize (tmpTimeSteps - 1, zerovec);
-    u.resize (numTimeSteps);
+    uVecs.assign (stencil.getTimeSteps(), std::vector<double> (N, 0)); //
     
-    for (int i = 0; i < u.size(); ++i)
-        u[i] = &uVecs[i][0];
-    
-    for (int i = 0; i < 4; ++i)
-        std::cout << ((double*)&u[0][0])[i] << std::endl;
+    u.assign (stencil.getTimeSteps(), nullptr);
+    for (int i = 0; i < stencil.getStencilWidth(); ++i)
+        for (int j = 0; j < stencil.getTimeSteps(); ++j)
+            u[j] = &uVecsAVX[j][0];
+
 }
 
 Object1DAVX::~Object1DAVX()
@@ -57,11 +50,11 @@ void Object1DAVX::resized()
         buttonArea.removeFromLeft (GUIDefines::horStateArea * getWidth());
         buttonArea.removeFromLeft (GUIDefines::margin);
         
-        muteButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+        buttons[0]->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
         buttonArea.removeFromTop (GUIDefines::margin * 0.5);
-        editButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+        buttons[1]->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
         buttonArea.removeFromTop (GUIDefines::margin * 0.5);
-        removeButton->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
+        buttons[2]->setBounds(buttonArea.removeFromTop (GUIDefines::buttonHeight));
     }
     else if (appState != normalAppState)
     {
@@ -74,74 +67,75 @@ void Object1DAVX::resized()
 
 void Object1DAVX::calculateFDS()
 {
-    int lowerBound = boundaryConditions[0] == simplySupported ? 1 : 2;
-    int upperBound = boundaryConditions[1] == simplySupported ? N : N - 1;
-    
-    double extraValPlus;
-    double extraValMin;
-    for (int i = 0; i < uVecsPlus1.size(); ++i)
-        for (int l = 0; l < numAVX; ++l)
-        {
-            if (l != numAVX - 1)
-            {
-                extraValPlus = ((double*)&u[i+1][l+1])[3];
-            } else {
-                extraValPlus = 0.0;
-            }
-            
-            if (l != 0)
-                extraValMin = ((double*)&u[i+1][l-1])[0];
-            else
-                extraValMin = 0.0;
-            uVecsPlus1[i][l] = _mm256_set_pd (((double*)&u[i+1][l])[2],
-                                              ((double*)&u[i+1][l])[1],
-                                              ((double*)&u[i+1][l])[0],
-                                              extraValPlus);
-            uVecsMin1[i][l] = _mm256_set_pd (extraValMin,
-                                             ((double*)&u[i+1][l])[3],
-                                             ((double*)&u[i+1][l])[2],
-                                             ((double*)&u[i+1][l])[1]);
-        }
-    
+
+    // fill up AVX vector
+    int startIdx;
+
+    for (int k = 0; k < numAVX; ++k)
+    {
+        // zero out the next vectors
+        uVecsAVX[uNextPtrIdx][k] = _mm256_set_pd (0.0, 0.0, 0.0, 0.0);
+    }
+
     for (int l = 0; l < numAVX; ++l)
     {
-        if (l == 0)
-        {
-            //stencil[0:lowerBound] = 0;
-        }
-        else if (l == numAVX)
-        {
-            //stencil[upperBound:end] = 0;
-        }
         for (int j = 0; j < stencil.getStencilWidth(); ++j)
         {
-            u[0][l] = u[0][l] - stencil[1][j] * u[1][l - stencilIdxStart + j] - stencil[2][j] * u[2][l - stencilIdxStart + j];
+            startIdx = j - stencilIdxStart + 4 * l;
+            u[0][l] = _mm256_sub_pd (_mm256_sub_pd (u[0][l],
+                                     stencil[1][j] *
+                                     _mm256_setr_pd ((l == 0 ? 0 : (*u[1])[startIdx]),
+                                                     (*u[1])[startIdx + 1],
+                                                     (*u[1])[startIdx + 2],
+                                                     (l == numAVX - 1 ? 0 : (*(u[1]))[startIdx + 3]))),
+                                     stencil[2][j] *
+                                     _mm256_setr_pd ((l == 0 ? 0 : (*(u[2]))[startIdx]),
+                                                     (*u[2])[startIdx + 1],
+                                                     (*u[2])[startIdx + 2],
+                                                     (l == numAVX - 1 ? 0 : (*(u[2]))[startIdx + 3])));
+            
+        }
+        if (l == 0)
+        {
+            u[0][l] = _mm256_setr_pd (0.0, 0.0, (*u[0])[2], (*u[0])[3]);
+        }
+        
+        if (N % 4 == 1 && l == numAVX - 2)
+        {
+            u[0][l] = _mm256_setr_pd((*(u[0]))[N - 3], (*u[0])[N - 2], (*u[0])[N - 1], 0.0);
+            u[0][l + 1] = _mm256_setr_pd(0.0, 0.0, 0.0, 0.0);
+        }
+        else if (N % 4 == 2 && l == numAVX - 1)
+        {
+            u[0][l] = _mm256_setr_pd(0.0, 0.0, 0.0, 0.0);
+        }
+        else if (N % 4 == 3 && l == numAVX - 1)
+        {
+            u[0][l] = _mm256_setr_pd((*u[0])[N - 1], 0.0, 0.0, 0.0);
+        }
+        else if (N % 4 == 0 && l == numAVX - 1)
+        {
+            u[0][l] = _mm256_setr_pd((*u[0])[N - 2], (*u[0])[N - 1], 0.0, 0.0);
         }
     }
-//    for (int l = lowerBound; l < upperBound; ++l)
-//    {
-//        uNext[l] = -(A1 * u[l] + A2 * (u[l-1] + u[l+1]) + A3 * (u[l-2] + u[l+2]) + B * uPrev);
-//    }
 }
 
 double Object1DAVX::getOutput (double ratio)
 {
     int idx = floor (N * ratio);
-    int vecIdx = idx / 4;
-    int valIdx = idx % 4;
-    
-    return ((double*)&u[1][vecIdx])[valIdx];
+    return (*u[1])[idx];
 }
 
 void Object1DAVX::updateStates()
 {
     int lengthUVec = static_cast<int> (u.size());
-    for (int i = lengthUVec - 1; i > 0; --i)
-        u[i] = u[i - 1];
     uNextPtrIdx = (uNextPtrIdx + (lengthUVec - 1)) % lengthUVec;
-    u[0] = &uVecs[uNextPtrIdx][0];
-    for (int i = 0; i < numAVX; ++i)
-        u[0][i] = zeroval;
+
+    for (int i = lengthUVec - 1; i > 0; --i)
+    {
+        u[i] = u[i - 1];
+    }
+    u[0] = &uVecsAVX[uNextPtrIdx][0];
 }
 
 void Object1DAVX::excite()
@@ -149,52 +143,67 @@ void Object1DAVX::excite()
     if (excited)
     {
         excited = false;
-        double width = floor((N * 2.0) / 5.0) / 2.0;
-        int loc = floor(N / 2.0);
-        int startIdx = loc - width / 2.0;
+        int width = floor((N * 2.0) / 5.0) / 2.0;
+        int loc = floor(N * static_cast<float>(getXLoc()) / static_cast<float>(getWidth()));
+        int startIdx = clamp(loc - width / 2.0, simplySupported ? 1 : 2, simplySupported ? N-1-width : N-2-width);
+        int vectIdx = startIdx / 4;
+        int inVectIdx = startIdx % 4 - 1;
+        std::vector<double> AVXvect (4, 0.0);
         for (int i = 0; i < width; ++i)
         {
-            double val = (1 - cos (2 * double_Pi * i / width)) * 0.5;
-            for (int j = 1; j < u.size(); ++j)
-                u[j][startIdx + i] = u[j][startIdx + i] + val;
+            int idx = (i + inVectIdx) % 4;
+            AVXvect[idx] = (1 - cos (2 * double_Pi * i / width)) * 0.5;
+            if (idx == 3 || i == width - 1)
+            {
+                for (int j = 1; j < stencil.getTimeSteps(); ++j)
+                {
+                    uVecsAVX[j][vectIdx] = _mm256_setr_pd(AVXvect[0], AVXvect[1], AVXvect[2], AVXvect[3]);
+                }
+                AVXvect = std::vector<double> (4, 0.0);
+                ++vectIdx;
+            }
         }
+        std::cout << "wait" << std::endl;
     }
+    
 }
 
 void Object1DAVX::setZero()
 {
-    for (int i = 0; i < uVecs.size(); ++i)
-        for (int j = 0; j < numAVX; ++j)
-            uVecs[i][j] = zeroval; setZFlag = false;
+    for (int j = 0; j < stencil.getTimeSteps(); ++j)
+        for (int k = 0; k < numAVX; ++k)
+            uVecsAVX[j][k] = _mm256_set_pd(0.0, 0.0, 0.0, 0.0); setZFlag = false;
+    
+    std::cout << "Should be zero" << std::endl;
     
 }
 
 Path Object1DAVX::visualiseState()
 {
-//    auto stringBounds = getHeight() / 2.0;
-//    Path stringPath;
-//    stringPath.startNewSubPath (0, stringBounds);
-//    int stateWidth = (showButtons ? GUIDefines::horStateArea : 1.0) * getWidth();
-//    auto spacing = stateWidth / static_cast<double>(N);
-//    auto x = spacing;
-//
-//    for (int y = 1; y < N; y++)
-//    {
-//        int visualScaling = 10;
-//        float newY = u[0][y] * visualScaling + stringBounds;
-//
-//        if (isnan(x) || isinf(abs(x) || isnan(newY) || isinf(abs(newY))))
-//        {
-//            std::cout << "Wait" << std::endl;
-//        };
-//
-//        if (isnan(newY))
-//            newY = 0;
-//        stringPath.lineTo(x, newY);
-//        x += spacing;
-//    }
-//    stringPath.lineTo(stateWidth, stringBounds);
-//    return stringPath;
+    auto stringBounds = getHeight() / 2.0;
+    Path stringPath;
+    stringPath.startNewSubPath (0, stringBounds);
+    int stateWidth = (showButtons ? GUIDefines::horStateArea : 1.0) * getWidth();
+    auto spacing = stateWidth / static_cast<double>(N - 2);
+    auto x = spacing;
+
+    for (int y = 1; y < N - 1; y++) //needs to be different with free conditions
+    {
+        double visualScaling = 10;
+        float newY = (*u[1])[y] * visualScaling + stringBounds;
+
+        if (isnan(x) || isinf(abs(x) || isnan(newY) || isinf(abs(newY))))
+        {
+            std::cout << "Wait" << std::endl;
+        }
+        
+        if (isnan(newY))
+            newY = 0;
+        stringPath.lineTo(x, newY);
+        x += spacing;
+    }
+    stringPath.lineTo(stateWidth, stringBounds);
+    return stringPath;
 }
 
 void Object1DAVX::changeBoundaryCondition()
@@ -205,9 +214,9 @@ void Object1DAVX::changeBoundaryCondition()
         for (int i = 0; i < uVecs.size(); ++i)
         {
             if (boundaryToChange == boundaryConditions[0])
-                uVecs[i][0] = _mm256_set_pd (((double*)&uVecs[i][0])[3], ((double*)&uVecs[i][0])[2], 0, 0);
+                uVecs[i][0] = 0;
             else
-                uVecs[i][numAVX - 1] = _mm256_set_pd (0, 0, ((double*)&uVecs[i][numAVX-1])[1], ((double*)&uVecs[i][numAVX-1])[0]);
+                uVecs[i][numAVX - 1] = 0;
             
         }
     

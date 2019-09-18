@@ -33,22 +33,32 @@ MainComponent::MainComponent()
     addKeyListener (this);
     
     changeAppState (normalAppState);
-    setSize (800, 600);
 
     cpuUsage.setColour(Label::textColourId, Colours::white);
     addAndMakeVisible (cpuUsage);
     
-    graphicsLabel.setText ("Graphics update speed: ", dontSendNotification);
+    graphicsLabel.setText ("Graphics (Hz): ", dontSendNotification);
     graphicsLabel.setColour (Label::textColourId, Colours::white);
     addAndMakeVisible (graphicsLabel);
 
-    graphicsSlider.setRange (0.0, 60, 1.0);
+    graphicsSlider.setRange (0.1, 60, 0.1);
     graphicsSlider.setValue (15);
     graphicsSlider.addListener (this);
     addAndMakeVisible (graphicsSlider);
     
+    modelButtons.add (new TextButton());
+    modelButtons[0]->setButtonText("Create String");
+    addAndMakeVisible (modelButtons[0]);
+    modelButtons[0]->addListener (this);
+    
+    modelButtons.add (new TextButton());
+    modelButtons[1]->setButtonText("Create Mass-Spring");
+    addAndMakeVisible (modelButtons[1]);
+    modelButtons[1]->addListener (this);
+    
     // specify the number of input and output channels that we want to open
     setAudioChannels (2, 2);
+    setSize (800, 600);
 }
 
 MainComponent::~MainComponent()
@@ -86,6 +96,8 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
             object->refreshCoefficients();
         if (object->hasBoundaryChanged())
             object->changeBoundaryCondition();
+//        if (object->needsToBeRepainted())
+        
     }
     
     if (appState != normalAppState)
@@ -135,9 +147,7 @@ void MainComponent::resized()
 {
     Rectangle<int> totArea = getLocalBounds();
 
-    totArea.removeFromTop(GUIDefines::margin);
-    totArea.removeFromLeft(GUIDefines::margin);
-    totArea.removeFromRight(GUIDefines::margin);
+    totArea.reduce (GUIDefines::margin, GUIDefines::margin);
     
     calculator->setBounds(totArea.removeFromTop (GUIDefines::calculatorHeight));
     
@@ -163,28 +173,40 @@ void MainComponent::resized()
     
     muteButton->setBounds (lowerButtonArea.removeFromRight(GUIDefines::buttonWidth));
     lowerButtonArea.removeFromRight (GUIDefines::margin);
-    cpuUsage.setBounds (lowerButtonArea.removeFromLeft(100));
+    cpuUsage.setBounds (lowerButtonArea.removeFromLeft(75));
     
-    graphicsSlider.setBounds (lowerButtonArea.removeFromRight (200));
+    
+    graphicsSlider.setBounds (lowerButtonArea.removeFromRight (150));
     lowerButtonArea.removeFromRight (GUIDefines::margin);
     
-    graphicsLabel.setBounds(lowerButtonArea.removeFromRight (150));
+    graphicsLabel.setBounds(lowerButtonArea.removeFromRight (75));
+    int widthPerButton = (lowerButtonArea.getWidth() - GUIDefines::margin) / modelButtons.size();
+    lowerButtonArea.removeFromLeft (GUIDefines::margin);
+    for (auto modelButton : modelButtons)
+    {
+        modelButton->setBounds (lowerButtonArea.removeFromLeft(widthPerButton));
+        lowerButtonArea.removeFromLeft (GUIDefines::margin);
+    }
     
 }
 
-void MainComponent::addCoefficient()
+void MainComponent::addCoefficient (bool automatic, String nme, double val, bool dyn)
 {
-    addAndMakeVisible (addCoeffWindow);
     DialogWindow::LaunchOptions dlg;
-    dlg.dialogTitle = TRANS (addCoeffWindow->getCoeffPopupState() == normalCoeffState ? "Add Coefficient" : "Edit Coefficient");
-    dlg.content.set (addCoeffWindow, false);
-    addCoeffWindow->setKeyboardFocus();
-    
-    if (dlg.runModal() == 1)
+    int dlgModal = -1;
+    if (!automatic)
     {
-        String coeffName = addCoeffWindow->getCoeffName();
-        double value = addCoeffWindow->getValue();
-        bool isDynamic = addCoeffWindow->isDynamic();
+        addAndMakeVisible (addCoeffWindow);
+        dlg.dialogTitle = TRANS (addCoeffWindow->getCoeffPopupState() == normalCoeffState ? "Add Coefficient" : "Edit Coefficient");
+        dlg.content.set (addCoeffWindow, false);
+        addCoeffWindow->setKeyboardFocus();
+        dlgModal = dlg.runModal();
+    }
+    if (dlgModal == 1 || automatic)
+    {
+        String coeffName = automatic ? nme : addCoeffWindow->getCoeffName();
+        double value = automatic ? val : addCoeffWindow->getValue();
+        bool isDynamic = automatic ? dyn : addCoeffWindow->isDynamic();
         
         // if the coefficient already exists
         int coeffIndex = coefficientList.containsCoefficient (coeffName);
@@ -327,19 +349,29 @@ bool MainComponent::createPhysicalModel()
     std::vector<Equation> terms;
     if (fdsSolver->solve (equationString, eq, &coefficients, coefficientTermIndex, terms))
     {
-        OBJECT1D* newObject;
-        if (appState != editObjectState)
+        Object* newObject;
+        int editedObjectIdx = objects.indexOf (editingObject);
+        
+        // create 0D object
+        if (stencilWidth == 1)
         {
-            std::vector<BoundaryCondition> bounds (2, clamped);
-            objects.add (new OBJECT1D (equationString, eq, terms, bounds));
-            newObject = objects[objects.size() - 1];
-        } else {
-            int editedObjectIdx = objects.indexOf (editingObject);
-            std::vector<BoundaryCondition> bounds;
-            bounds.push_back (editingObject->getBoundary (true));
-            bounds.push_back (editingObject->getBoundary (false));
-            objects.set (editedObjectIdx, new OBJECT1D (equationString, eq, terms, bounds));
-            newObject = objects[editedObjectIdx];
+            if (appState != editObjectState)
+                newObject = new Object0D (equationString, eq, terms);
+            else
+                newObject = objects[editedObjectIdx];
+        }
+        else
+        {
+            for (int i = 0; i < (eq.getNumPoints() + 3) / 4; ++i)
+                testVec[i] = _mm256_setr_pd (0.0, 0.0, 0.0, 0.0);
+            testVec.erase (testVec.begin() + (eq.getNumPoints() + 3) / 4, testVec.end());
+            
+            // edit object
+    #ifdef AVX_SUPPORTED
+                newObject = new Object1DAVX (equationString, eq, terms, testVec);
+    #else
+                newObject = new Object1D (equationString, eq, terms);
+    #endif
         }
         
         // only add the coefficients that are actually used by the newly created object
@@ -353,9 +385,14 @@ bool MainComponent::createPhysicalModel()
 
         newObject->setCoefficientTermIndex (coefficientTermIndex);
         newObject->refreshCoefficients();
+        newObject->createUpdateEq();
         newObject->addChangeListener (this);
-        addAndMakeVisible (newObject);
+        if (appState == editObjectState)
+            objects.set(editedObjectIdx, newObject);
+        else
+            objects.add(newObject);
         
+        addAndMakeVisible (newObject);
         changeAppState (normalAppState);
     } else {
         return false;
@@ -382,6 +419,7 @@ void MainComponent::buttonClicked (Button* button)
         return;
     }
     
+    
     if (button == newButton)
     {
         if (appState == normalAppState)
@@ -400,6 +438,16 @@ void MainComponent::buttonClicked (Button* button)
         mute = !mute;
     }
     
+    if (button == modelButtons[0])
+    {
+        createString();
+    }
+    
+    if (button == modelButtons[1])
+    {
+        createMassSpring();
+    }
+    
 }
 
 void MainComponent::sliderValueChanged (Slider* slider)
@@ -410,13 +458,6 @@ void MainComponent::sliderValueChanged (Slider* slider)
 
 void MainComponent::refresh()
 {
-    if (calculator->refresh())
-        for (auto coeffButton : coeffButtons)
-            coeffButton->setEnabled (false);
-    else
-        for (auto coeffButton : coeffButtons)
-            coeffButton->setEnabled (true);
-    
     resized();
 }
 
@@ -581,3 +622,18 @@ void MainComponent::changeAppState (ApplicationState applicationState)
     appState = applicationState;
 }
 
+void MainComponent::createString()
+{
+    addCoefficient (true, "T", 200000, false);
+    calculator->setEquationString("203_300_100_T--_207_300_");
+    createPhysicalModel();
+    resized();
+}
+
+void MainComponent::createMassSpring()
+{
+    addCoefficient (true, "W", 2000000, false);
+    calculator->setEquationString("203_300_100_901_W--_300_");
+    createPhysicalModel();
+    resized();
+}

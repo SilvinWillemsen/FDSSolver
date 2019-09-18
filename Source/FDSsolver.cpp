@@ -67,9 +67,10 @@ bool FDSsolver::checkEquation(String& equationString)
 
 bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coeffValues, Array<var>& coefficientTermIndex, std::vector<Equation>& terms)
 {
+    // Subdivide the equation string into tokens
     StringArray tokens;
     tokens.addTokens (equationString, "_", "\"");
-    tokens.remove (tokens.size() - 1);
+    tokens.remove (tokens.size() - 1); // remove last token as it is empty
     
     // check syntax if not debugging
     if (!GUIDefines::debug)
@@ -83,6 +84,7 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
         String firstChar = tokens[i].substring(0, 1);
         int firstInt = firstChar.getIntValue();
         
+        // if the token is an operator (+, -, =) add to the number of terms
         if (firstInt == 1)
         {
             ++numTerms;
@@ -98,11 +100,9 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
     std::vector<double> tmpCoeffsPerTerm (numTerms, 1);
     coeffsPerTerm = tmpCoeffsPerTerm;
     
-    // fill the coefficients with 1's
+    // clear the coefficientTermIndex and initialise with 1's
     Array<var> tmpArray;
     tmpArray.add (1);
-    
-    //clear the coefficientTermIndex and initialise with 1's
     
     for (int i = 0; i < numTerms; ++i)
         coefficientTermIndex.add (tmpArray);
@@ -608,17 +608,6 @@ Equation& FDSsolver::centDiffT (Equation& eq)
     
     return eq;
 }
-
-std::vector<std::vector<double>> FDSsolver::getStencil (Equation& eq)
-{
-    std::vector<std::vector<double>> stencil (3, std::vector<double> (eq.getStencilWidth(), 0));
-    
-    for (int i = 0; i < eq.getTimeSteps(); ++i)
-        for (int j = 0; j < eq.getStencilWidth(); ++i)
-            stencil[i][j] = eq.getUCoeffs(i)[j];
-    
-    return stencil;
-};
 
 int FDSsolver::getStencilWidth (String& equationString, bool checkSpace)
 {

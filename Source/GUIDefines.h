@@ -11,13 +11,17 @@
 #pragma once
 #include "../JuceLibraryCode/JuceHeader.h"
 
-//#if __AVX2__
-//#define AVX_SUPPORTED
-//#define OBJECT1D Object1DAVX
-//#include <immintrin.h>
-//#else
-#define OBJECT1D Object1D
-//#endif
+//#define USE_AVX
+
+#ifdef USE_AVX
+    #if __AVX2__
+        #define AVX_SUPPORTED
+        #define OBJECT1D Object1DAVX
+        #include <immintrin.h>
+    #endif
+#else
+    #define OBJECT1D Object1D
+#endif
 
 class StringCode
 {
@@ -75,9 +79,56 @@ public:
     };
 };
 
+struct UEB // update equation blocks
+{
+    String u (int time, int l = 0)
+    {
+        switch (time)
+        {
+            case 0:
+                return uNext(l);
+            case 1:
+                return uCur(l);
+            case 2:
+                return uPrev(l);
+        };
+    }
+    
+    String uNext (int l = 0) {
+        if (l < 0)
+            return "uNext[l" + String(l) + "]";
+        else if (l == 0)
+            return "uNext[l]";
+        else
+            return "uNext[l+" + String(l) + "]";
+    };
+    String uCur (int l = 0) {
+        if (l < 0)
+            return "u[l" + String(l) + "]";
+        else if (l == 0)
+            return "u[l]";
+        else
+            return "u[l+" + String(l) + "]";
+    };
+    String uPrev (int l = 0) {
+        if (l < 0)
+            return "uPrev[l" + String(l) + "]";
+        else if (l == 0)
+            return "uPrev[l]";
+        else
+            return "uPrev[l+" + String(l) + "]";
+    };
+    String forLoop (String eq, int bound, int N) {
+        return "for (int l = " + String(bound) + "; l < " + String(N - bound + 1) + "; ++l)" +
+        " { " + eq + " }";
+    };
+};
+
+// Is needed to tell the MainComponent the reason for the callback
 enum Action
 {
     noAction,
+    
     insertCoeff,
     editCoeff,
     removeCoeff,
@@ -108,7 +159,8 @@ public:
     static const int calculatorHeight = 200;
     static const bool debug = false;
     constexpr static const double horStateArea = 0.9;
-    
+    static const bool AVXdouble = true;
+    static const int AVXnum = AVXdouble ? 4 : 8;
     static const int listBoxRowHeight = 40;
 
 };

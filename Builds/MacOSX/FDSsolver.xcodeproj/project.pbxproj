@@ -27,6 +27,7 @@
 		6B79CBAAE7C4A83514F01A97 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 739B634FA5F6AFC490B0285C /* AudioToolbox.framework */; };
 		7095E3A99963DCF9DA0FFB95 /* MainComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC095E454E03576AC59112B2 /* MainComponent.cpp */; };
 		736A251662AC17613D5EA6D1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7C6DEB1872E5DDAA41E5214 /* OpenGL.framework */; };
+		7FC701BE93472B7E3DB8E3A3 /* Object0D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8392A6986A76ECA60EA516C3 /* Object0D.cpp */; };
 		8BBFDA1F3C637DD7E8C5ADC8 /* include_juce_video.mm in Sources */ = {isa = PBXBuildFile; fileRef = E05B8D11E163F41BDC5D80E6 /* include_juce_video.mm */; };
 		90755A4F564AEA82FAC2D644 /* include_juce_events.mm in Sources */ = {isa = PBXBuildFile; fileRef = DD445F6CF920D784986BDB2B /* include_juce_events.mm */; };
 		995AE99120D5817F8A0C71C1 /* Equation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8BAD8B78356440ABFD44AE7 /* Equation.cpp */; };
@@ -55,6 +56,7 @@
 		0D3B1A62D8C4FC515A44F2FB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		10FA5529A1AE9B18252DC552 /* include_juce_core.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_core.mm; path = ../../JuceLibraryCode/include_juce_core.mm; sourceTree = SOURCE_ROOT; };
 		143CB7D406ABF99F0036C9D8 /* RecentFilesMenuTemplate.nib */ = {isa = PBXFileReference; lastKnownFileType = file.nib; path = RecentFilesMenuTemplate.nib; sourceTree = SOURCE_ROOT; };
+		153E1746B02DD8F8C617DF66 /* Object0D.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Object0D.h; path = ../../Source/Object0D.h; sourceTree = SOURCE_ROOT; };
 		16A31A0C0BA4BE904A298A5C /* include_juce_gui_basics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_gui_basics.mm; path = ../../JuceLibraryCode/include_juce_gui_basics.mm; sourceTree = SOURCE_ROOT; };
 		17118B69724D873A7DD9698B /* Object1D.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Object1D.cpp; path = ../../Source/Object1D.cpp; sourceTree = SOURCE_ROOT; };
 		1B6459775124174DD199A145 /* juce_audio_devices */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_devices; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_audio_devices; sourceTree = "<absolute>"; };
@@ -82,6 +84,7 @@
 		71200552495B195C2153A29F /* juce_cryptography */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_cryptography; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_cryptography; sourceTree = "<absolute>"; };
 		739B634FA5F6AFC490B0285C /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		81B419B316ADB066C080A01C /* juce_gui_extra */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_gui_extra; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_gui_extra; sourceTree = "<absolute>"; };
+		8392A6986A76ECA60EA516C3 /* Object0D.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Object0D.cpp; path = ../../Source/Object0D.cpp; sourceTree = SOURCE_ROOT; };
 		84116B5CD9BE459BF71D0B08 /* juce_core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_core; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_core; sourceTree = "<absolute>"; };
 		84C21A73FFBB8EF3EC419A08 /* juce_graphics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_graphics; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_graphics; sourceTree = "<absolute>"; };
 		8AB82C42EC2AA22B79842817 /* CoefficientComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = CoefficientComponent.cpp; path = ../../Source/CoefficientComponent.cpp; sourceTree = SOURCE_ROOT; };
@@ -211,6 +214,8 @@
 				932442E18D7456AA448947B8 /* Object1DAVX.h */,
 				17118B69724D873A7DD9698B /* Object1D.cpp */,
 				D18E3E1DA11B03B8949F90A1 /* Object1D.h */,
+				8392A6986A76ECA60EA516C3 /* Object0D.cpp */,
+				153E1746B02DD8F8C617DF66 /* Object0D.h */,
 				62DCCAC62108B2D8FF9ADCAC /* Object.cpp */,
 				DAAF7A605D938F6E9F00A30A /* Object.h */,
 				CDD4BFB64E9D98D6D3C1DC99 /* AddCoefficient.cpp */,
@@ -362,6 +367,7 @@
 			files = (
 				52C05084516059AC5A8F248A /* Object1DAVX.cpp in Sources */,
 				4CDB1ED3B066A4E5A6B29231 /* Object1D.cpp in Sources */,
+				7FC701BE93472B7E3DB8E3A3 /* Object0D.cpp in Sources */,
 				F936EB9657A59E078535E21E /* Object.cpp in Sources */,
 				A183137C6A3036D51526EF54 /* AddCoefficient.cpp in Sources */,
 				995AE99120D5817F8A0C71C1 /* Equation.cpp in Sources */,
