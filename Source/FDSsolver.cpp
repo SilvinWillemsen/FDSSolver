@@ -391,9 +391,24 @@ double FDSsolver::calculateGridSpacing (StringArray& tokens, NamedValueSet* coef
 //
 //    if (eq.getStencilWidth() == 5)
 //        h = sqrt(2 * static_cast<double>(coeff) * k);
-//    else if (eq.getStencilWidth() == 3)
-    h = sqrt (static_cast<double> (coeffValues[0].getValueAt (0))) * k;
+//        else if (eq.getStencilWidth() == 3)
     
+    if (eq.getStencilWidth() == 3)
+    {
+        h = sqrt (static_cast<double> (coeffValues[0].getValueAt (0))) * k;
+    }
+    else
+    {
+    //    h = sqrt (sqrt(static_cast<double>(coeffValues[0].getValueAt (0))) * k * 2);
+        double kappaSq = coeffValues[0].getValueAt (0);
+        if (coeffValues[0].size() <= 2)
+        {
+            h = sqrt (sqrt(static_cast<double>(coeffValues[0].getValueAt (0))) * k * 2);
+        } else {
+            double sig1 = coeffValues[0].getValueAt(2);
+            h = sqrt((4.0f * sig1 * k + sqrt(pow(4.0f * sig1 * k, 2) + 16.0 * kappaSq * k * k)) / 2.0f);
+        }
+    }
     return h;
 }
 

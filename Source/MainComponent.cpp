@@ -52,7 +52,7 @@ MainComponent::MainComponent()
     modelButtons[0]->addListener (this);
     
     modelButtons.add (new TextButton());
-    modelButtons[1]->setButtonText("Create Mass-Spring");
+    modelButtons[1]->setButtonText("Create Bar");
     addAndMakeVisible (modelButtons[1]);
     modelButtons[1]->addListener (this);
     
@@ -115,7 +115,7 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
         {
             object->excite();
             object->calculateFDS();
-            output = output + object->getOutput (0.5);
+            output = output + object->getOutput (0.3);
             object->updateStates();
         }
         if (!mute)
@@ -124,7 +124,6 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
             channelData2[i] = clip(output);
         }
     }
-    
 }
 
 void MainComponent::releaseResources()
@@ -249,7 +248,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                 addCoefficient();
                 break;
             case createPMMessage:
-                appState == normalAppState ? createPhysicalModel() : editPhysicalModel();
+                appState == newObjectState ? createPhysicalModel() : editPhysicalModel();
                 resized();
                 break;
             default:
@@ -270,6 +269,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                 case editObject:
                     calculator->setEquationString (object->getEquationString());
+                    calculator->refresh();
                     coefficientList.loadCoefficientsFromObject (object->getCoefficientComponents());
                     editingObject = object;
                     changeAppState (editObjectState);
@@ -340,6 +340,8 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
 
 bool MainComponent::createPhysicalModel()
 {
+    ++numObject;
+    calculator->refresh();
     String equationString = calculator->getEquationString();
     int amountOfTimeSteps = fdsSolver->getStencilWidth (equationString, false);
     int stencilWidth = fdsSolver->getStencilWidth (equationString, true);
@@ -347,7 +349,9 @@ bool MainComponent::createPhysicalModel()
     
     Array<var> coefficientTermIndex;
     std::vector<Equation> terms;
-    if (fdsSolver->solve (equationString, eq, &coefficients, coefficientTermIndex, terms))
+    NamedValueSet currentCoefficients = coefficientList.getNamedValueSet(fdsSolver->getUsedCoeffs (equationString));
+    
+    if (fdsSolver->solve (equationString, eq, &currentCoefficients, coefficientTermIndex, terms))
     {
         Object* newObject;
         int editedObjectIdx = objects.indexOf (editingObject);
@@ -356,27 +360,25 @@ bool MainComponent::createPhysicalModel()
         if (stencilWidth == 1)
         {
             if (appState != editObjectState)
-                newObject = new Object0D (equationString, eq, terms);
+                newObject = new Object0D (equationString, eq, terms, numObject);
             else
                 newObject = objects[editedObjectIdx];
         }
         else
         {
-            for (int i = 0; i < (eq.getNumPoints() + 3) / 4; ++i)
-                testVec[i] = _mm256_setr_pd (0.0, 0.0, 0.0, 0.0);
-            testVec.erase (testVec.begin() + (eq.getNumPoints() + 3) / 4, testVec.end());
+//            for (int i = 0; i < (eq.getNumPoints() + 3) / 4; ++i)
+//                testVec[i] = _mm256_setr_pd (0.0, 0.0, 0.0, 0.0);
+//            testVec.erase (testVec.begin() + (eq.getNumPoints() + 3) / 4, testVec.end());
             
             // edit object
     #ifdef AVX_SUPPORTED
-                newObject = new Object1DAVX (equationString, eq, terms, testVec);
+                newObject = new Object1DAVX (equationString, eq, terms, testVec, numObject);
     #else
-                newObject = new Object1D (equationString, eq, terms);
+                newObject = new Object1D (equationString, eq, terms, numObject);
     #endif
         }
         
         // only add the coefficients that are actually used by the newly created object
-        StringArray usedCoeffs = fdsSolver->getUsedCoeffs (equationString);
-        NamedValueSet currentCoefficients = coefficientList.getNamedValueSet (usedCoeffs);
         newObject->setCoefficients (currentCoefficients);
         
         for (auto coeffComp : coefficientList.getCoefficients())
@@ -393,11 +395,10 @@ bool MainComponent::createPhysicalModel()
             objects.add(newObject);
         
         addAndMakeVisible (newObject);
-        changeAppState (normalAppState);
     } else {
         return false;
     }
-    
+    changeAppState (normalAppState);
     return true;
 }
 
@@ -440,12 +441,12 @@ void MainComponent::buttonClicked (Button* button)
     
     if (button == modelButtons[0])
     {
-        createString();
+        create("string");
     }
     
     if (button == modelButtons[1])
     {
-        createMassSpring();
+        create("bar");
     }
     
 }
@@ -622,18 +623,44 @@ void MainComponent::changeAppState (ApplicationState applicationState)
     appState = applicationState;
 }
 
-void MainComponent::createString()
+void MainComponent::create (String model)
 {
-    addCoefficient (true, "T", 200000, false);
-    calculator->setEquationString("203_300_100_T--_207_300_");
-    createPhysicalModel();
-    resized();
-}
-
-void MainComponent::createMassSpring()
-{
-    addCoefficient (true, "W", 2000000, false);
-    calculator->setEquationString("203_300_100_901_W--_300_");
+    coefficientList.emptyCoefficientList (false);
+    
+    std::vector<String> coeffNames;
+    String equationString;
+    std::vector<double> coeffValues;
+    if (model == "string")
+    {
+        coeffNames.push_back ("C");
+        equationString = "203_300_100_" + coeffNames[0] + "--_207_300_";
+        coeffValues.push_back (200000);
+    }
+    else if (model == "bar")
+    {
+        coeffNames.push_back ("K");
+        coeffNames.push_back ("SO");
+        coeffNames.push_back ("ST");
+        equationString = "203_300_100_901_"+coeffNames[0]+"--_207_207_300_102_"+coeffNames[1]+"-_202_300_101_"+coeffNames[2]+"-_201_207_300_";
+        coeffValues.push_back (20);
+        coeffValues.push_back (0);
+        coeffValues.push_back (0.000);
+    }
+    else if (model == "mass-spring")
+    {
+        coeffNames.push_back ("W");
+        equationString = "203_300_100_901_" + coeffNames[0] + "--_300_";
+        coeffValues.push_back (2000000);
+    }
+    else
+    {
+        return;
+    }
+    
+    for (int i = 0; i < coeffNames.size(); ++i)
+        addCoefficient (true, coeffNames[i], coeffValues[i], false);
+    
+    calculator->setEquationString(equationString);
     createPhysicalModel();
     resized();
 }

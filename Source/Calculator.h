@@ -48,7 +48,7 @@ public:
     ChangeMessage getChangeMessage() { return changeMessage; };
     
     // Equation string functions
-    void setEquationString (String eqString) { equationString = eqString; };
+    void setEquationString (String eqString) { equationString = eqString; textBox->setText (decoder (equationString), dontSendNotification); };
     String getEquationString() { return equationString; };
     void addToEquation (String stringToAdd) { equationString += stringToAdd; refresh(); };
     void clearEquation() { equationString = ""; refresh(); };

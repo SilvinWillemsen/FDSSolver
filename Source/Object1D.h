@@ -19,7 +19,7 @@
 class Object1D    : public Object
 {
 public:
-    Object1D (String equationString, Equation stencil, std::vector<Equation> terms);
+    Object1D (String equationString, Equation stencil, std::vector<Equation> terms, int numObject);
     ~Object1D();
     
     void paint (Graphics& g) override;

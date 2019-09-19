@@ -41,7 +41,7 @@ class Object    : public Component,
                     public Timer
 {
 public:
-    Object (String equationString, Equation stencil, std::vector<Equation> terms, int numBoundaries);
+    Object (String equationString, Equation stencil, std::vector<Equation> terms, int numBoundaries, int numObject);
     ~Object();
     
     void buttonClicked (Button* button) override;
@@ -183,6 +183,7 @@ protected:
 
     void updateEqGenerator (String& eqString);
     
+    int numObject = 0;
     void (*updateEq) (double* uNext, double* u, double* uPrev, double* parameters);
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object)
 };

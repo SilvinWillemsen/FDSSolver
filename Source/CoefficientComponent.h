@@ -39,6 +39,7 @@ public:
     
     double getSliderValue() { return slider.getValue(); };
     double getValue() { return value; };
+
     void clickCoeffButton() { buttonClicked (&coefficientButton); };
     
     void setApplicationState (ApplicationState applicationState);

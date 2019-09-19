@@ -13,7 +13,7 @@
 
 //==============================================================================
 CoefficientComponent::CoefficientComponent (const String& name, double val, bool dyn) : value (val),
-                                                                            slider(Slider::LinearHorizontal, Slider::NoTextBox),
+                                                                            slider (Slider::LinearHorizontal, Slider::NoTextBox),
                                                                             dynamic (dyn)
 {
     this->setName (name);
@@ -139,8 +139,7 @@ void CoefficientComponent::update (bool dyn, double val, bool init)
     
     if (dynamic)
     {
-        if (init)
-            slider.setRange (0.0, val);
+        slider.setRange (0.0, val);
         slider.setValue (val);
     } else {
         label.setText ((appState == normalAppState ? getName() : "") + " = " + String (val), dontSendNotification);

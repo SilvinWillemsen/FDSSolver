@@ -12,7 +12,7 @@
 #include "Object1D.h"
 
 //==============================================================================
-Object1D::Object1D (String equationString, Equation stencil, std::vector<Equation> terms) : Object (equationString, stencil, terms, 2)
+Object1D::Object1D (String equationString, Equation stencil, std::vector<Equation> terms, int numObject) : Object (equationString, stencil, terms, 2, numObject)
 {
     uVecs.reserve (stencil.getTimeSteps()); //resize according to amount of vectors in stencil
     
@@ -62,38 +62,81 @@ void Object1D::resized()
 
 void Object1D::createUpdateEq()
 {
+    // initialise update equation blocks struct
     UEB ueb;
+    
+    // start code with "uNext[l] = :
+    String code = ueb.u(0) + " =";
+    
+    // calculate half the stencil width
+    int halfStencilWidth = (stencil.getStencilWidth() - 1) / 2.0;
+    
+    // check if stencil is symmetric (almost always the case..)
     if (isSymmetric)
     {
-        std::cout << "symmetric!" << std::endl;
+        // for the current to the last time step...
+        for (int j = 1; j < stencil.getTimeSteps(); ++j)
+        {
+            // for the left part of the middle the stencil...
+            for (int i = 0; i < halfStencilWidth; ++i)
+            {
+                // if the value isn't 0...
+                if (stencil.getUCoeffAt(j, i) != 0)
+                    // add to the codestring
+                    code += " - coeffs[" + String(i + (j - 1) * stencil.getStencilWidth()) + "] * (" + ueb.u(j, i - halfStencilWidth) + " + " + ueb.u(j, -i + halfStencilWidth) + ")";
+            }
+            // for the middle of the stencil
+            if (stencil.getUCoeffAt(j, halfStencilWidth) != 0)
+                // add to the codestring
+                code += " - coeffs[" + String (halfStencilWidth + (j - 1) * stencil.getStencilWidth()) + "] * " + ueb.u(j);
+        }
+    // if the stencil is not symmetric (for some reason)
+    } else {
+        // for the current to the last time step...
+        for (int j = 1; j < stencil.getTimeSteps(); ++j)
+        {
+            // for the entire stencil...
+            for (int i = 0; i < stencil.getStencilWidth(); ++i)
+            {
+                // if the value isn't 0...
+                if (stencil.getUCoeffAt(j, i) != 0)
+                    // add to the codestring
+                    code += " - coeffs[" + String (i + (j - 1) * stencil.getStencilWidth()) + "] * " + ueb.u(j, i - halfStencilWidth);
+            }
+        }
     }
     
-    String code = ueb.u(0) + " = ";
-    int halfStencilWidth = (stencil.getStencilWidth() - 1) / 2.0;
-    for (int j = 1; j < stencil.getTimeSteps(); ++j)
-    {
-        for (int i = 0; i < halfStencilWidth; ++i)
-        {
-            if (stencil.getUCoeffAt(j, i) != 0)
-                code += "- coeffs[" + String(i) + "] * (" + ueb.u(j, i - halfStencilWidth) + " + " + ueb.u(j, i + halfStencilWidth) + ")";
-        }
-        if (stencil.getUCoeffAt(j, halfStencilWidth) != 0)
-            code += " - coeffs[" + String (halfStencilWidth + (j - 1) * stencil.getStencilWidth()) + "] * " + ueb.u(j);
-    }
+    // end codestring with a ;
     code += ";";
+    
     // wrap update in a forloop
     String forLoop = ueb.forLoop (code, boundaryConditions[0] ? 1 : 2, N);
-    updateEqGenerator(forLoop);
+    
+    // generate c-code
+    updateEqGenerator (forLoop);
 }
 
 void Object1D::calculateFDS()
 {
+    // input states and coefficients in vector form
     updateEq (u[0], u[1], u[2], &stencilVectorForm[0]);
+
     
+//    if (u[0][static_cast<int>(N/2)] != 0)
+//    {
+//        for (int l = 0; l < 53; ++l)
+//            std::cout << u[0][l] << " ";
+//        
+//        std::cout << std::endl;
+//    }
+//    if (u[0][static_cast<int>(N / 2)] != 0)
+//    {
+//        std::cout << "wait" << std::endl;
+//    }
 ///// OLD STUFF /////
 //    std::cout << "wait" << std::endl;
 //    for (int l = (boundaryConditions[0] == simplySupported ? 1 : 2);
-//             l < (boundaryConditions[1] == simplySupported ? N : N - 1); ++l)
+//             l < (boundaryConditions[1] == simplySupported ? N - 1 : N - 2); ++l)
 //    {
 //        u[0][l] = 0;
 //        for (int j = 0; j < stencil.getStencilWidth(); ++j)
@@ -135,8 +178,9 @@ void Object1D::setZero()
 {
     for (int i = 0; i < uVecs.size(); ++i)
         for (int j = 0; j < uVecs[i].size(); ++j)
-            uVecs[i][j] = 0; setZFlag = false;
+            uVecs[i][j] = 0;
     
+    setZFlag = false;
 }
 
 Path Object1D::visualiseState()

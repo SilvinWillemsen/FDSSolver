@@ -15,10 +15,11 @@
 Object::Object (String equationString,
                 Equation stencil,
                 std::vector<Equation> termsInput,
-                int numBoundaries) : stencil (stencil),
-                                     equationString (equationString),
-                                     h (stencil.getGridSpacing()),
-                                     N (1.0 / h)
+                int numBoundaries, int numObject) : stencil (stencil),
+                                                    equationString (equationString),
+                                                    h (stencil.getGridSpacing()),
+                                                    N (1.0 / h),
+                                                    numObject (numObject)
 {
     // Set boundary conditions
     std::vector<BoundaryCondition> boundaries (numBoundaries, clamped);
@@ -237,14 +238,15 @@ void Object::setApplicationState (ApplicationState applicationState)
     resized();
 }
 
-void Object::updateEqGenerator(String& eqString)
+void Object::updateEqGenerator (String& updateEqString)
 {
     void *handle;
     char *error;
     
-    const char* eq = static_cast<const char*>(eqString.toUTF8());
-    
-    
+    // convert updateEqString to char
+    const char* eq = static_cast<const char*>(updateEqString.toUTF8());
+//    const char* fileName = static_cast<const char*>(String("code" + String(numObject) + ".c").toUTF8());
+//    FILE *fd= fopen(fileName, "w");
     FILE *fd= fopen("code.c", "w");
     
     fprintf(fd, "#include <stdio.h>\n"
@@ -254,9 +256,14 @@ void Object::updateEqGenerator(String& eqString)
                 "}", eq);
     fclose(fd);
     
-    system ("clang -shared -undefined dynamic_lookup -O3 -o generated.so code.c -g");
-    
-    handle = dlopen ("generated.so", RTLD_LAZY);
+    const char* generFileName = static_cast<const char*>(String("generated" + String(numObject) + ".so").toUTF8());
+//    const char* systemInstr = static_cast<const char*>(String("clang -shared -undefined dynamic_lookup -O3 -o " + String(generFileName) + " " + String(fileName) + " -g").toUTF8());
+    const char* systemInstr = static_cast<const char*>(String("clang -shared -undefined dynamic_lookup -O3 -o " + String(generFileName) + " code.c -g").toUTF8());
+    system (systemInstr);
+//    system ("clang -shared -undefined dynamic_lookup -O3 -o generated.so code.c -g");
+
+    handle = dlopen (generFileName, RTLD_LAZY);
+//    handle = dlopen ("generated.so", RTLD_LAZY);
     
     if (!handle)
     {
@@ -265,13 +272,16 @@ void Object::updateEqGenerator(String& eqString)
     }
     
     dlerror();    /* Clear any existing error */
-    *(void **)(&updateEq) = dlsym (handle, "updateEq");
-//    &updateEq = dlsym(handle, "updateEq");
+    
+    updateEq = nullptr;
+    
+    *(void **)(&updateEq) = dlsym (handle, "updateEq"); // second argument finds function name
+    
     if ((error = dlerror()) != NULL)  {
         fprintf (stderr, "%s\n", error);
         exit(1);
     }
     
-//    updateEq("Hi!");
+    // don't close handle
 //    dlclose(handle);
 }

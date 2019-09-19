@@ -68,8 +68,7 @@ public:
     
     void changeAppState (ApplicationState applicationState);
     
-    void createString();
-    void createMassSpring();
+    void create (String model);
     
 private:
     //==============================================================================
@@ -112,5 +111,6 @@ private:
     
     std::vector<__m256d> testVec {100};
     
+    int numObject = 0;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
