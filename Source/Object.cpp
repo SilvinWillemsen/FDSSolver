@@ -263,7 +263,6 @@ void Object::updateEqGenerator (String& updateEqString)
 //    system ("clang -shared -undefined dynamic_lookup -O3 -o generated.so code.c -g");
 
     handle = dlopen (generFileName, RTLD_LAZY);
-//    handle = dlopen ("generated.so", RTLD_LAZY);
     
     if (!handle)
     {

@@ -70,7 +70,7 @@ std::shared_ptr<CoefficientComponent> CoefficientList::addCoefficient (const Str
 {
     coefficients.push_back (std::make_shared<CoefficientComponent> (name, value, dynamic));
     std::shared_ptr<CoefficientComponent> newCoeff = coefficients[coefficients.size() - 1];
-    newCoeff.get()->setApplicationState (appState);
+    newCoeff.get()->setApplicationState (appState, false);
     addAndMakeVisible (newCoeff.get());
     return newCoeff;
 }
@@ -79,7 +79,7 @@ std::shared_ptr<CoefficientComponent> CoefficientList::addCoefficient (std::shar
 {
     coefficients.push_back (coefficient);
     std::shared_ptr<CoefficientComponent> newCoeff = coefficients[coefficients.size() - 1];
-    newCoeff.get()->setApplicationState (appState);
+    newCoeff.get()->setApplicationState (appState, false);
     addAndMakeVisible (newCoeff.get());
     return newCoeff;
 }
@@ -169,11 +169,11 @@ NamedValueSet CoefficientList::getNamedValueSet (StringArray coefficientNames)
     return namedValueSet;
 }
 
-void CoefficientList::setApplicationState (ApplicationState applicationState)
+void CoefficientList::setApplicationState (ApplicationState applicationState, bool init)
 {
     for (auto coefficient : coefficients)
     {
-        coefficient->setApplicationState (applicationState);
+        coefficient->setApplicationState (applicationState, init);
     }
     switch (applicationState)
     {

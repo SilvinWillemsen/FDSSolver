@@ -42,7 +42,7 @@ public:
 
     void clickCoeffButton() { buttonClicked (&coefficientButton); };
     
-    void setApplicationState (ApplicationState applicationState);
+    void setApplicationState (ApplicationState applicationState, bool init);
     
 private:
 //    String name;

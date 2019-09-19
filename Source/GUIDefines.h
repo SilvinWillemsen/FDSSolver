@@ -119,7 +119,7 @@ struct UEB // update equation blocks
             return "uPrev[l+" + String(l) + "]";
     };
     String forLoop (String eq, int bound, int N) {
-        return "\n for (int l = " + String(bound) + "; l < " + String(N - bound - 1) + "; ++l)" +
+        return "\n for (int l = " + String(bound) + "; l < " + String(N - bound) + "; ++l)" +
         "\n { \n    " + eq + " \n }";
     };
 };

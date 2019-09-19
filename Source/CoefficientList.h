@@ -51,7 +51,7 @@ public:
 
     NamedValueSet getNamedValueSet (StringArray coefficientNames = StringArray());
     
-    void setApplicationState (ApplicationState applicationState);
+    void setApplicationState (ApplicationState applicationState, bool init);
     
 private:
     ScopedPointer<Label> coeffTopLabel;

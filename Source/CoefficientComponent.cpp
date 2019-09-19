@@ -139,7 +139,8 @@ void CoefficientComponent::update (bool dyn, double val, bool init)
     
     if (dynamic)
     {
-        slider.setRange (0.0, val);
+        if (init)
+            slider.setRange (0.0, val);
         slider.setValue (val);
     } else {
         label.setText ((appState == normalAppState ? getName() : "") + " = " + String (val), dontSendNotification);
@@ -159,8 +160,8 @@ void CoefficientComponent::update (bool dyn, double val, bool init)
     resized();
 }
 
-void CoefficientComponent::setApplicationState (ApplicationState applicationState)
+void CoefficientComponent::setApplicationState (ApplicationState applicationState, bool init)
 {
     appState = applicationState;
-    update (dynamic, value);
+    update (dynamic, value, init);
 }

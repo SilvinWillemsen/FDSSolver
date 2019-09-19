@@ -66,6 +66,26 @@ MainComponent::~MainComponent()
     // This shuts down the audio device and clears the audio source.
     stopTimer();
     shutdownAudio();
+    
+    // remove all generated files
+    int idx = 1;
+    char* filename = "generated1.so";
+    while (1)
+    {
+        if (access( filename, F_OK ) != -1)
+        {
+            const char* systemString = static_cast<const char*>(String("rm generated" + String(idx) + ".so").toUTF8());
+            system(systemString);
+            const char* systemString2 = static_cast<const char*>(String("rm -R generated" + String(idx) + ".so.dSYM").toUTF8());
+            system(systemString2);
+            ++idx;
+            const char* filenamePre = static_cast<const char*>(String("generated" + String(idx) + ".so").toUTF8());
+            filename = (char*)filenamePre;
+        } else {
+            system("rm code.c");
+            break;
+        }
+    }
 }
 
 //==============================================================================
@@ -599,7 +619,7 @@ bool MainComponent::keyStateChanged (bool isKeyDown, Component* originatingCompo
 void MainComponent::changeAppState (ApplicationState applicationState)
 {
     currentlySelectedObject = nullptr;
-    
+    bool coeffListInit = false;
     switch (applicationState) {
         case newObjectState:
             newButton->setEnabled (true);
@@ -608,6 +628,7 @@ void MainComponent::changeAppState (ApplicationState applicationState)
         case normalAppState:
             newButton->setEnabled (true);
             newButton->setButtonText ("New Model");
+            coeffListInit = true;
             break;
         case editObjectState:
             newButton->setEnabled (false);
@@ -615,7 +636,7 @@ void MainComponent::changeAppState (ApplicationState applicationState)
         default:
             break;
     }
-    coefficientList.setApplicationState (applicationState);
+    coefficientList.setApplicationState (applicationState, coeffListInit);
     calculator->setApplicationState (applicationState);
     for (auto object : objects)
         object->setApplicationState (applicationState);
