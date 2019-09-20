@@ -49,42 +49,50 @@ public:
     void paint (Graphics& g) override;
     void resized() override;
 
+    // Listen to objects returning a message
     void changeListenerCallback (ChangeBroadcaster* source) override;
+    
+    // Buttons and sliders at the bottom of the application
     void buttonClicked (Button* button) override;
     void sliderValueChanged (Slider* slider) override;
     
+    // Create physical model function
     bool createPhysicalModel();
-    bool editPhysicalModel();
     
-    void addCoefficient (bool automatic = false, String nme = "", double val = 0.0, bool isDynamic = false);
+    // Add coefficient (arguments are for one-click model generation)
+    void addCoefficient (bool automatic = false, String name = "", double val = 0.0, bool isDynamic = false);
     
-    void refresh();
-    
+    // Graphics timeer callback
     void timerCallback() override;
+    
+    // Output clipping
     double clip (double output, double min = -1.0, double max = 1.0);
     
+    // Key listening functions
     bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
     bool keyStateChanged (bool isKeyDown, Component* originatingComponent) override;
     
+    // Change application state (normalAppState / newObjectState / editObjectState)
     void changeAppState (ApplicationState applicationState);
     
+    // Create a physical model with the click of a button
     void create (String model);
     
 private:
     //==============================================================================
-    // Your private member variables go here...
+    
+    // The calculator including equation textbox
     ScopedPointer<Calculator> calculator;
     
+    // The FDS Solver (collection of functions)
     ScopedPointer<FDSsolver> fdsSolver = nullptr;
-    ScopedPointer<Equation> eq = nullptr;
-    double fs;
-    int bufferSize;
     
     OwnedArray<TextButton> modelButtons;
     OwnedArray<Slider> coeffSliders;
 
     ScopedPointer<AddCoefficient> addCoeffWindow;
     
+    // List of coefficients containing coefficientcomponents
     CoefficientList coefficientList;
 
     OwnedArray<Label> coeffLabels;
@@ -112,5 +120,10 @@ private:
     std::vector<__m256d> testVec {100};
     
     int numObject = 0;
+    
+    // Audio variables
+    double fs;
+    int bufferSize;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

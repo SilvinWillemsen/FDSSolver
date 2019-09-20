@@ -242,11 +242,12 @@ void Object::updateEqGenerator (String& updateEqString)
 {
     void *handle;
     char *error;
+    std::hash<int64> hasher;
+    auto newName = hasher (juce::Time::getCurrentTime().toMilliseconds());
     
     // convert updateEqString to char
     const char* eq = static_cast<const char*>(updateEqString.toUTF8());
-//    const char* fileName = static_cast<const char*>(String("code" + String(numObject) + ".c").toUTF8());
-//    FILE *fd= fopen(fileName, "w");
+
     FILE *fd= fopen("code.c", "w");
     
     fprintf(fd, "#include <stdio.h>\n"
@@ -256,14 +257,47 @@ void Object::updateEqGenerator (String& updateEqString)
                 "}", eq);
     fclose(fd);
     
-    const char* generFileName = static_cast<const char*>(String("generated" + String(numObject) + ".so").toUTF8());
-//    const char* systemInstr = static_cast<const char*>(String("clang -shared -undefined dynamic_lookup -O3 -o " + String(generFileName) + " " + String(fileName) + " -g").toUTF8());
-    const char* systemInstr = static_cast<const char*>(String("clang -shared -undefined dynamic_lookup -O3 -o " + String(generFileName) + " code.c -g").toUTF8());
-    system (systemInstr);
-//    system ("clang -shared -undefined dynamic_lookup -O3 -o generated.so code.c -g");
-
-    handle = dlopen (generFileName, RTLD_LAZY);
+    String systemInstr;
     
+    // if this object is new (has not been edited yet) delete the previous file
+    if (curName != 0)
+    {
+        removeFiles (curName);
+    }
+    curName = newName;
+    systemInstr = String ("clang -shared -undefined dynamic_lookup -O3 -o " + String (curName) + ".so code.c -g");
+    system (toConstChar (systemInstr));
+    handle = dlopen (toConstChar (String (String (curName) + ".so")), RTLD_LAZY);
+    
+//    String originalName = String("generated" + String(numObject) + ".so");
+//    String fileToGenerate;
+//    String systemInstr;
+//
+//    // if the original name (fx. generated1.so) already exists, remove this file and add the edited name (fx. generated1E.so)
+//    if (access( toConstChar(originalName), F_OK ) != -1)
+//    {
+//        fileToGenerate = String("generated" + String(numObject) + "E.so");
+//        systemInstr = static_cast<const char*> (String ("rm " + String (originalName) + "\n rm -R " + String (originalName) + ".dSYM").toUTF8());
+//        system(toConstChar (systemInstr));
+//
+//    } else {
+//        // otherwise, use the original name to create a file (fx. generated1.so)
+//        fileToGenerate = originalName;
+//
+//        // if an edited file already exists (fx. if the model has been edited twice), remove the edited file
+//        String editFileName = String("generated" + String(numObject) + "E.so");
+//        if (access( toConstChar (editFileName), F_OK ) != -1)
+//        {
+//            String editedName = static_cast<const char*>(String("generated" + String (numObject) + "E.so").toUTF8());
+//            systemInstr = String("rm " + editedName + "\n rm -R " + editedName + ".dSYM").toUTF8();
+//            system(toConstChar (systemInstr));
+//        }
+//    }
+//
+//    systemInstr = String("clang -shared -undefined dynamic_lookup -O3 -o " + String (fileToGenerate) + " code.c -g");
+//    system(toConstChar (systemInstr));
+//    handle = dlopen (toConstChar (fileToGenerate), RTLD_LAZY);
+//
     if (!handle)
     {
         fprintf (stderr, "%s\n", dlerror());
@@ -272,15 +306,10 @@ void Object::updateEqGenerator (String& updateEqString)
     
     dlerror();    /* Clear any existing error */
     
-    updateEq = nullptr;
-    
     *(void **)(&updateEq) = dlsym (handle, "updateEq"); // second argument finds function name
     
     if ((error = dlerror()) != NULL)  {
         fprintf (stderr, "%s\n", error);
         exit(1);
     }
-    
-    // don't close handle
-//    dlclose(handle);
 }

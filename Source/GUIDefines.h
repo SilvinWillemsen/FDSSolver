@@ -91,6 +91,9 @@ struct UEB // update equation blocks
                 return uCur(l);
             case 2:
                 return uPrev(l);
+            default:
+                std::cout << "Not Possible" << std::endl;
+                return "";
         };
     }
     

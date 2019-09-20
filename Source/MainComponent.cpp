@@ -70,6 +70,7 @@ MainComponent::~MainComponent()
     // remove all generated files
     int idx = 1;
     char* filename = "generated1.so";
+    char* filenameE = "generated1E.so";
     while (1)
     {
         if (access( filename, F_OK ) != -1)
@@ -81,6 +82,16 @@ MainComponent::~MainComponent()
             ++idx;
             const char* filenamePre = static_cast<const char*>(String("generated" + String(idx) + ".so").toUTF8());
             filename = (char*)filenamePre;
+        }
+        else if (access( filenameE, F_OK ) != -1)
+        {
+            const char* systemString = static_cast<const char*>(String("rm generated" + String(idx) + "E.so").toUTF8());
+            system(systemString);
+            const char* systemString2 = static_cast<const char*>(String("rm -R generated" + String(idx) + "E.so.dSYM").toUTF8());
+            system(systemString2);
+            ++idx;
+            const char* filenamePre = static_cast<const char*>(String("generated" + String(idx) + "E.so").toUTF8());
+            filenameE = (char*)filenamePre;
         } else {
             system("rm code.c");
             break;
@@ -102,7 +113,7 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
     bufferSize = samplesPerBlockExpected;
     fdsSolver = new FDSsolver (&coefficientList, GUIDefines::debug ? 1.0 : 1.0 / fs);// / fs);
 //    equation =
-    refresh();
+    resized();
 }
 
 void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill)
@@ -116,8 +127,6 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
             object->refreshCoefficients();
         if (object->hasBoundaryChanged())
             object->changeBoundaryCondition();
-//        if (object->needsToBeRepainted())
-        
     }
     
     if (appState != normalAppState)
@@ -209,7 +218,7 @@ void MainComponent::resized()
     
 }
 
-void MainComponent::addCoefficient (bool automatic, String nme, double val, bool dyn)
+void MainComponent::addCoefficient (bool automatic, String name, double val, bool dyn)
 {
     DialogWindow::LaunchOptions dlg;
     int dlgModal = -1;
@@ -223,7 +232,7 @@ void MainComponent::addCoefficient (bool automatic, String nme, double val, bool
     }
     if (dlgModal == 1 || automatic)
     {
-        String coeffName = automatic ? nme : addCoeffWindow->getCoeffName();
+        String coeffName = automatic ? name : addCoeffWindow->getCoeffName();
         double value = automatic ? val : addCoeffWindow->getValue();
         bool isDynamic = automatic ? dyn : addCoeffWindow->isDynamic();
         
@@ -268,7 +277,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                 addCoefficient();
                 break;
             case createPMMessage:
-                appState == newObjectState ? createPhysicalModel() : editPhysicalModel();
+                createPhysicalModel();
                 resized();
                 break;
             default:
@@ -283,6 +292,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
     {
         if (source == object)
         {
+            String systemInstr;
             switch (object->getAction()) {
                 case muteObject:
                     object->setZeroFlag();
@@ -296,6 +306,9 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                     
                 case removeObject:
+                    
+                    systemInstr = "rm " + String (object->getCurName()) + ".so \n rm -R " + String (object->getCurName()) + ".so.dSYM";
+                    system (static_cast<const char*>(systemInstr.toUTF8()));
                     objects.removeObject (object);
                     calculator->clearEquation();
                     coefficientList.emptyCoefficientList();
@@ -355,12 +368,16 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
             }
         }
     }
-    refresh();
+    resized();
 }
 
 bool MainComponent::createPhysicalModel()
 {
-    ++numObject;
+    
+    if (appState != editObjectState)
+        ++numObject;
+        
+    
     calculator->refresh();
     String equationString = calculator->getEquationString();
     int amountOfTimeSteps = fdsSolver->getStencilWidth (equationString, false);
@@ -373,16 +390,12 @@ bool MainComponent::createPhysicalModel()
     
     if (fdsSolver->solve (equationString, eq, &currentCoefficients, coefficientTermIndex, terms))
     {
-        Object* newObject;
-        int editedObjectIdx = objects.indexOf (editingObject);
+        Object* newObject;objects.indexOf (editingObject);
         
         // create 0D object
         if (stencilWidth == 1)
         {
-            if (appState != editObjectState)
-                newObject = new Object0D (equationString, eq, terms, numObject);
-            else
-                newObject = objects[editedObjectIdx];
+            newObject = new Object0D (equationString, eq, terms, numObject);
         }
         else
         {
@@ -390,7 +403,6 @@ bool MainComponent::createPhysicalModel()
 //                testVec[i] = _mm256_setr_pd (0.0, 0.0, 0.0, 0.0);
 //            testVec.erase (testVec.begin() + (eq.getNumPoints() + 3) / 4, testVec.end());
             
-            // edit object
     #ifdef AVX_SUPPORTED
                 newObject = new Object1DAVX (equationString, eq, terms, testVec, numObject);
     #else
@@ -407,29 +419,27 @@ bool MainComponent::createPhysicalModel()
 
         newObject->setCoefficientTermIndex (coefficientTermIndex);
         newObject->refreshCoefficients();
+        if (appState == editObjectState)
+            newObject->setCurName (editingObject->getCurName());
         newObject->createUpdateEq();
         newObject->addChangeListener (this);
         if (appState == editObjectState)
-            objects.set(editedObjectIdx, newObject);
-        else
+        {
+            objects.set(objects.indexOf (editingObject), newObject);
+            editingObject = nullptr;
+        } else {
             objects.add(newObject);
+        }
         
         addAndMakeVisible (newObject);
     } else {
         return false;
     }
     changeAppState (normalAppState);
+
     return true;
 }
 
-bool MainComponent::editPhysicalModel()
-{
-    if (!createPhysicalModel())
-        return false;
-    editingObject = nullptr;
-    return true;
-}
-    
 void MainComponent::buttonClicked (Button* button)
 {
     KeyPress key = KeyPress (KeyPress::returnKey);
@@ -475,11 +485,6 @@ void MainComponent::sliderValueChanged (Slider* slider)
 {
     if (slider == &graphicsSlider)
         startTimerHz (slider->getValue());
-}
-
-void MainComponent::refresh()
-{
-    resized();
 }
 
 void MainComponent::timerCallback()

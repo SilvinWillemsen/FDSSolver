@@ -113,6 +113,16 @@ public:
         }
         return val;
     }
+    
+    const char* toConstChar (String string) { return static_cast<const char*> (string.toUTF8()); }
+    unsigned long getCurName() { return curName; };
+    void setCurName (unsigned long cN) { curName = cN; };
+    
+    void removeFiles (unsigned long cN)
+    {
+        String systemInstr = String ("rm " + String (curName) + ".so \n rm -R " + String (curName) + ".so.dSYM").toUTF8();
+        system (toConstChar (systemInstr));
+    }
 protected:
     
     // Store different parts of the equation separately in terms. This includes (fx.) the 1/k^2 and 1/h^2 of the \delta_{tt} and \delta_{xx} operators, but not the coefficients as these can be dyamic
@@ -185,5 +195,8 @@ protected:
     
     int numObject = 0;
     void (*updateEq) (double* uNext, double* u, double* uPrev, double* parameters);
+    
+    unsigned long curName = 0;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object)
 };
