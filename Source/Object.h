@@ -41,7 +41,7 @@ class Object    : public Component,
                     public Timer
 {
 public:
-    Object (String equationString, Equation stencil, std::vector<Equation> terms, int numBoundaries, int numObject);
+    Object (String equationString, Equation stencil, std::vector<Equation> terms, int numDim);
     ~Object();
     
     void buttonClicked (Button* button) override;
@@ -192,8 +192,7 @@ protected:
     int boundaryChangeIdx = -1; // for 1D object left = 0, right = 1.
 
     void updateEqGenerator (String& eqString);
-    
-    int numObject = 0;
+
     void (*updateEq) (double* uNext, double* u, double* uPrev, double* parameters);
     
     unsigned long curName = 0;

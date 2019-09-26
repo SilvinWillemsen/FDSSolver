@@ -3,11 +3,11 @@
 <JUCERPROJECT id="yHXHd5" name="FDSsolver" projectType="guiapp" jucerVersion="5.4.1">
   <MAINGROUP id="iOQDaH" name="FDSsolver">
     <GROUP id="{C69A153F-C0F4-07C6-ECD0-F265B52BC998}" name="Source">
-      <FILE id="fostV9" name="updateEqGenerator.c" compile="1" resource="0"
-            file="../../Desktop/updateEqGenerator.c"/>
       <FILE id="Okc5f4" name="GUIDefines.h" compile="0" resource="0" file="Source/GUIDefines.h"/>
       <FILE id="X964mO" name="Object1DAVX.cpp" compile="1" resource="0" file="Source/Object1DAVX.cpp"/>
       <FILE id="HYq7Pk" name="Object1DAVX.h" compile="0" resource="0" file="Source/Object1DAVX.h"/>
+      <FILE id="CvFdTK" name="Object2D.cpp" compile="1" resource="0" file="Source/Object2D.cpp"/>
+      <FILE id="iE85EJ" name="Object2D.h" compile="0" resource="0" file="Source/Object2D.h"/>
       <FILE id="hOhWuo" name="Object1D.cpp" compile="1" resource="0" file="Source/Object1D.cpp"/>
       <FILE id="Eeiiw2" name="Object1D.h" compile="0" resource="0" file="Source/Object1D.h"/>
       <FILE id="sJs71x" name="Object0D.cpp" compile="1" resource="0" file="Source/Object0D.cpp"/>
@@ -26,6 +26,8 @@
             file="Source/CoefficientComponent.cpp"/>
       <FILE id="YK45Gr" name="CoefficientComponent.h" compile="0" resource="0"
             file="Source/CoefficientComponent.h"/>
+      <FILE id="KYadTR" name="BottomMenu.cpp" compile="1" resource="0" file="Source/BottomMenu.cpp"/>
+      <FILE id="x3UZuv" name="BottomMenu.h" compile="0" resource="0" file="Source/BottomMenu.h"/>
       <FILE id="W1WaGp" name="CoefficientList.cpp" compile="1" resource="0"
             file="Source/CoefficientList.cpp"/>
       <FILE id="Abcqka" name="CoefficientList.h" compile="0" resource="0"

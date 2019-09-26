@@ -16,14 +16,8 @@
 
 //==============================================================================
 /*
+    Class containing all the buttons and equation textbox to create FDSs and turn them into PMs
 */
-
-enum ChangeMessage
-{
-    noChangeMessage,
-    addCoeffMessage,
-    createPMMessage,
-};
 
 class Calculator    : public Component,
                       public Button::Listener,
@@ -45,7 +39,7 @@ public:
     
     void clickButton (String buttonName) { for (auto button : buttons) if (button->getName() == buttonName) buttonClicked (button); }
     
-    ChangeMessage getChangeMessage() { return changeMessage; };
+    Action getAction() { return action; };
     
     // Equation string functions
     void setEquationString (String eqString) { equationString = eqString; textBox->setText (decoder (equationString), dontSendNotification); };
@@ -100,7 +94,7 @@ private:
     
     TextButton* uLN = nullptr;
     
-    ChangeMessage changeMessage = noChangeMessage;
+    Action action = noAction;
     
     ApplicationState appState;
     

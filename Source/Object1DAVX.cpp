@@ -15,9 +15,8 @@
 Object1DAVX::Object1DAVX (String equationString,
                           Equation stencil,
                           std::vector<Equation> terms,
-                          std::vector<__m256d> testVec,
-                          int numObject) : Object (equationString, stencil, terms, 2, numObject),
-                                           numAVX ((N + GUIDefines::AVXnum - 1) / static_cast<double> (GUIDefines::AVXnum))
+                          std::vector<__m256d> testVec) : Object (equationString, stencil, terms, 2),
+                                                          numAVX ((N + GUIDefines::AVXnum - 1) / static_cast<double> (GUIDefines::AVXnum))
 {
     uVecsAVX = std::vector<std::vector<__m256d>> (std::vector<std::vector<__m256d>>(stencil.getTimeSteps(), testVec));
     

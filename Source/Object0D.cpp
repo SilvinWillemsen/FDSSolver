@@ -12,7 +12,7 @@
 #include "Object0D.h"
 
 //==============================================================================
-Object0D::Object0D (String equationString, Equation stencil, std::vector<Equation> terms, int numObject) : Object (equationString, stencil, terms, 0, numObject)
+Object0D::Object0D (String equationString, Equation stencil, std::vector<Equation> terms) : Object (equationString, stencil, terms, 0)
 {
     uVecs.reserve (stencil.getTimeSteps()); //resize according to amount of vectors in stencil
     

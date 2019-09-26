@@ -11,12 +11,21 @@
 #pragma once
 #include "../JuceLibraryCode/JuceHeader.h"
 
-// Class that contains the stencil and upon which can be performed operations
+/*
+ Class that contains the stencil and upon which can be performed operations
+ 
+ Constructor:
+     Arg 1: determines the height (first index) of the stencil
+     Arg 2: determines the width (second index) of the stencil
+     Arg 3: set the current time-step at the current location (u_l^n) to 1 or not
+ */
 
 class Equation
 {
     
 public:
+    
+
     Equation (int amountOfTimeSteps, int amountOfGridPoints, bool createULN = false);
     
     // OPERATORS //

@@ -15,57 +15,13 @@
 
 FDSsolver::FDSsolver (CoefficientList* coefficientList, double k) : coefficientList (coefficientList), k (k)
 {
-    // In your constructor, you should add any child components, and
-    // initialise any special settings that your component needs.
-
 }
 
 FDSsolver::~FDSsolver()
 {
 }
 
-void FDSsolver::paint (Graphics& g)
-{
-    /* This demo code just fills the component's background and
-       draws some placeholder text to get you started.
-
-       You should replace everything in this method with your own
-       drawing code..
-    */
-
-    g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));   // clear the background
-
-    g.setColour (Colours::grey);
-    g.drawRect (getLocalBounds(), 1);   // draw an outline around the component
-
-    g.setColour (Colours::white);
-    g.setFont (14.0f);
-    g.drawText ("FDSsolver", getLocalBounds(),
-                Justification::centred, true);   // draw some placeholder text
-}
-
-void FDSsolver::resized()
-{
-    // This method is where you should set the bounds of any child
-    // components that your component contains..
-
-}
-
-bool FDSsolver::checkEquation(String& equationString)
-{
-    StringArray tokens;
-    tokens.addTokens (equationString, "_", "\"");
-    tokens.remove (tokens.size() - 1);
-    
-    if (!checkSyntax (tokens))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coeffValues, Array<var>& coefficientTermIndex, std::vector<Equation>& terms)
+bool FDSsolver::solve (String& equationString, Equation& stencil, NamedValueSet* coeffValues, Array<var>& coefficientTermIndex, std::vector<Equation>& terms)
 {
     // Subdivide the equation string into tokens
     StringArray tokens;
@@ -77,50 +33,58 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
         if (!checkSyntax (tokens))
             return false;
     
-    // calculate number of terms
+    // calculate number of terms (parts of the equation between the operators)
     int numTerms = 1;
     for (int i = 0; i < tokens.size(); ++i)
     {
         String firstChar = tokens[i].substring(0, 1);
         int firstInt = firstChar.getIntValue();
         
-        // if the token is an operator (+, -, =) add to the number of terms
+        // if the token is an operator (+, -, =) add to the number of terms (simple as that :) )
         if (firstInt == 1)
         {
             ++numTerms;
         }
     }
     
+    // variable to hold after what term the equals sign is located
     int equalsSignIdx = 0;
-    bool newTermFlag = false;
     
-    terms.clear();
-    terms.reserve(numTerms);
+    // flag used in the loop below to determine whether a new term should be added or not
+    bool newTermFlag = true;
     
-    std::vector<double> tmpCoeffsPerTerm (numTerms, 1);
-    coeffsPerTerm = tmpCoeffsPerTerm;
+    // reset the terms vector
+    terms.reserve (numTerms);
     
     // clear the coefficientTermIndex and initialise with 1's
+    coefficientTermIndex.clear();
     Array<var> tmpArray;
     tmpArray.add (1);
     
     for (int i = 0; i < numTerms; ++i)
         coefficientTermIndex.add (tmpArray);
     
-    std::vector<int> operatorVect (numTerms - 1, 0);
+    // clear the coeffsPerTerm and initialise with 1's
+    coeffsPerTerm.clear();
+    coeffsPerTerm.shrink_to_fit();
+    coeffsPerTerm.resize (numTerms, 1);
     
-    terms.push_back(Equation (eq.getTimeSteps(), eq.getStencilWidth(), true));
+    // vector holding if a term is added or subtracted. The first term is always positive (a negative-sign will be included in the coefficientTermIndex)
     
-    int idx = 0;
+    std::vector<int> operatorMult (numTerms, 0);
+    operatorMult[0] = 1;
+    
+    int termIdx = -1;
     
     // calculate h
     if (GUIDefines::debug)
         h = 1;
     else
-        calculateGridSpacing (tokens, coeffValues, eq, numTerms);
+        calculateGridSpacing (tokens, coeffValues, stencil, numTerms);
     
-    eq.setNumPointsFromGridSpacing (h);
-    h = 1.0 / (static_cast<double> (eq.getNumPoints()));
+    stencil.setNumPointsFromGridSpacing (h);
+    h = 1.0 / (static_cast<double> (stencil.getNumPoints()));
+    
     for (int i = 0; i < tokens.size(); ++i)
     {
         String firstChar = tokens[i].substring(0, 1);
@@ -131,74 +95,87 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
         
         if (newTermFlag)
         {
-            terms.push_back (Equation (eq.getTimeSteps(), eq.getStencilWidth(), true));
-            ++idx;
+            // Add a new empty (u_l^n) term to the terms vector
+            terms.push_back (Equation (stencil.getTimeSteps(), stencil.getStencilWidth(), true));
+            
+            // Increase the term index
+            ++termIdx;
             newTermFlag = false;
         }
         switch (firstInt)
         {
             case 1:
-                operatorVect[idx-1] = tokens[i].substring(2, 3).getIntValue();
+                // Save whether a term is added or subtracted
+                operatorMult[termIdx] = tokens[i].substring(2, 3).getIntValue() == 2 ? -1 : 1;
+                
+                // Set the term-index of the equals sign
                 if (tokens[i].getIntValue() == 100)
                 {
-                    equalsSignIdx = idx;
+                    equalsSignIdx = termIdx;
                 }
                 break;
             case 2:
-
+                // Apply difference operators to the current term
                 switch(tokens[i].getIntValue())
                 {
                     case 200:
-                        forwDiffT (terms[idx]);
+                        forwDiffT (terms[termIdx]);
                         break;
                     case 201:
-                        backDiffT (terms[idx]);
+                        backDiffT (terms[termIdx]);
                         break;
                     case 202:
-                        centDiffT (terms[idx]);
+                        centDiffT (terms[termIdx]);
                         break;
                     case 203:
-                        secondOrderT (terms[idx]);
+                        secondOrderT (terms[termIdx]);
                         break;
                     case 204:
-                        forwDiffX (terms[idx]);
+                        forwDiffX (terms[termIdx]);
                         break;
                     case 205:
-                        backDiffX (terms[idx]);
+                        backDiffX (terms[termIdx]);
                         break;
                     case 206:
-                        centDiffX (terms[idx]);
+                        centDiffX (terms[termIdx]);
                         break;
                     case 207:
-                        secondOrderX (terms[idx]);
+                        secondOrderX (terms[termIdx]);
                         break;
                     case 208:
-                        fourthOrderX (terms[idx]);
+                        fourthOrderX (terms[termIdx]);
                         break;
                 }
                 break;
             case 3:
+                // if the token is the state variable u, a new term is coming up
                 newTermFlag = true;
                 break;
             case 9:
+                //// Save the coefficient in the coefficientTermIndex array ////
                 
+                // if the token is a "negative sign", add -1 to the coefficientTermIndex and multiply the coeffsPerTerm by -1.0
                 if (tokens[i].getIntValue() == 901)
                 {
-                    coefficientTermIndex[idx][0] = -1;
-                    coeffsPerTerm[idx] *= -1.0;
+                    coefficientTermIndex[termIdx][0] = -1;
+                    coeffsPerTerm[termIdx] *= -1.0;
                 } else {
-                    if (static_cast<int> (coefficientTermIndex[idx][0]) == 1)
-                        coefficientTermIndex[idx][0] = tokens[i].upToFirstOccurrenceOf ("-", false, true);
+                    if (static_cast<int> (coefficientTermIndex[termIdx][0]) == 1)
+                        coefficientTermIndex[termIdx][0] = tokens[i].upToFirstOccurrenceOf ("-", false, true);
                     else
-                        coefficientTermIndex[idx].append (tokens[i].upToFirstOccurrenceOf ("-", false, true));
-                    
+                        coefficientTermIndex[termIdx].append (tokens[i].upToFirstOccurrenceOf ("-", false, true));
+                  
+                    // Get the value of the coeffValues NamedValueSet using the coefficient name
                     auto valuePtr =  coeffValues->getVarPointer (tokens[i].upToFirstOccurrenceOf ("-", false, true));
+                    
                     if (valuePtr == NULL)
                     {
                         std::cout << "Coefficient was deleted" << std::endl;
                         return false;
                     }
-                    coeffsPerTerm[idx] *= static_cast<double> (*valuePtr);
+                    
+                    // Multiply the coeffsPerTerm with the value at the current coefficient
+                    coeffsPerTerm[termIdx] *= static_cast<double> (*valuePtr);
                 }
         }
     }
@@ -214,38 +191,36 @@ bool FDSsolver::solve (String& equationString, Equation& eq, NamedValueSet* coef
     
     for (int i = 0; i < terms.size(); ++i)
     {
-        int operatorMult = 1;
-        
-        // no operator before first term
-        if (i > 0 && operatorVect[i - 1] == 2)
-        {
-            operatorMult = -1;
-        }
+        // If the terms are before the equals sign, add them
         if (i < equalsSignIdx)
-            terms[i] = terms[i] * operatorMult;
-        else
-            terms[i] = terms[i] * (operatorMult * -1);
+            terms[i] = terms[i] * operatorMult[i];
+        else // Otherwise, subtract them
+            terms[i] = terms[i] * (operatorMult[i] * -1);
+        
+        // multiply the coefficients to their respective terms and add them to the stencil
         Equation term = terms[i] * coeffsPerTerm[i];
-        std::cout << coeffsPerTerm[i] << std::endl;
-        eq = eq + term;
+        stencil = stencil + term;
     }
     
-    int uNextIdx = (eq.getStencilWidth() - 1) / 2.0;
+    // Find the middle of the stencil (space-wise) at the next time-step
+    int uNextIdx = (stencil.getStencilWidth() - 1) / 2.0;
     
-    if (eq.getUCoeffs(0)[uNextIdx] == 0)
+    // If there is no uNext, don't continue
+    if (stencil.getUCoeffs(0)[uNextIdx] == 0)
     {
         std::cout << "No u^{n+1}" << std::endl;
         return false;
     }
     
+    //// Divide the stencil by whatever uNext is multiplied by (if not in debug mode) ////
     std::cout << "Stencil before division" << std::endl;
-    eq.showStencil();
+    stencil.showStencil();
     
     if (!GUIDefines::debug)
-        eq = eq / (eq.getUCoeffs(0)[uNextIdx]);
+        stencil = stencil / (stencil.getUCoeffs(0)[uNextIdx]);
     
     std::cout << "Stencil after division" << std::endl;
-    eq.showStencil();
+    stencil.showStencil();
     return true;
 }
 
@@ -256,14 +231,20 @@ StringArray FDSsolver::getUsedCoeffs (String& equationString)
     tokens.remove (tokens.size() - 1);
     
     StringArray usedCoeffs;
+    
+    // for all tokens
     for (auto token : tokens)
+        
+        // if the first character is not a digit
         if (!std::isdigit (*static_cast<const char*> (token.substring(0, 1).toUTF8())))
-            usedCoeffs.add (token.upToFirstOccurrenceOf("-", false, true));
+            
+            // add the letters (not the dashes) to the usedCoeffs vector
+            usedCoeffs.add (token.upToFirstOccurrenceOf ("-", false, true));
     
     return usedCoeffs;
 }
 
-double FDSsolver::calculateGridSpacing (StringArray& tokens, NamedValueSet* coeffValues, Equation& eq, int numTerms)
+double FDSsolver::calculateGridSpacing (StringArray& tokens, NamedValueSet* coeffValues, Equation& stencil, int numTerms)
 {
 //    // stability analysis here //
 //    int idx = -1;
@@ -393,7 +374,7 @@ double FDSsolver::calculateGridSpacing (StringArray& tokens, NamedValueSet* coef
 //        h = sqrt(2 * static_cast<double>(coeff) * k);
 //        else if (eq.getStencilWidth() == 3)
     
-    if (eq.getStencilWidth() == 3)
+    if (stencil.getStencilWidth() == 3)
     {
         h = sqrt (static_cast<double> (coeffValues[0].getValueAt (0))) * k;
     }
@@ -414,31 +395,21 @@ double FDSsolver::calculateGridSpacing (StringArray& tokens, NamedValueSet* coef
 
 bool FDSsolver::checkSyntax (StringArray& tokens)
 {
+    // Variable holding the first digit of the previous term to check what terms can legally come after
     int prevTermType = 0;
+    
     bool hasEqualsSign = false;
     
-    if (!checkAllowedCharacters (prevTermType, tokens, hasEqualsSign))
-        return false;
-    
-    if (!hasEqualsSign)
-    {
-        std::cout << "No equals sign" << std::endl;
-        return false;
-    }
-    return true;
-}
-
-// Function is maybe obsolete
-bool FDSsolver::checkAllowedCharacters (int prevTermType, StringArray& tokens, bool& hasEqualsSign)
-{
+    // For all tokens
     for (int i = 0; i < tokens.size(); ++i)
     {
-        
+        // if the token is an equals sign, set the flag to true
         if (tokens[i] == "100")
         {
             hasEqualsSign = true;
         }
         
+        // Retrieve the first character of the token
         String firstChar = tokens[i].substring(0, 1);
         
         const char* test = static_cast<const char*> (firstChar.toUTF8());
@@ -495,12 +466,25 @@ bool FDSsolver::checkAllowedCharacters (int prevTermType, StringArray& tokens, b
         // set the type of the previous character
         prevTermType = firstInt;
     }
+    
+    if (!hasEqualsSign)
+    {
+        std::cout << "No equals sign" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+// Function should never return false
+bool FDSsolver::checkAllowedCharacters (StringArray& tokens)
+{
+    
     return true;
 }
 
 // OPERATORS //
 
-Equation& FDSsolver::forwDiffX(Equation& eq)
+Equation& FDSsolver::forwDiffX (Equation& eq)
 {
     for (int i = 0; i < eq.getTimeSteps(); ++i)
         for (int j = eq.getStencilWidth() - 2; j >= 0; --j)

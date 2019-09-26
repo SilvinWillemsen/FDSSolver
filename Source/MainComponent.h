@@ -11,8 +11,9 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GUIDefines.h"
 #include "Calculator.h"
-#include "CoefficientList.h"
 #include "FDSsolver.h"
+#include "CoefficientList.h"
+#include "BottomMenu.h"
 #include "AddCoefficient.h"
 
 #include "Object0D.h"
@@ -22,15 +23,45 @@
     #include "Object1D.h"
 #endif
 
+#include "Object2D.h"
+
 //==============================================================================
 /*
-    This component lives inside our window, and this is where you should put all
-    your controls and content.
-*/
+    The main component of the application. Handles all communication between objects through the changeListenerCallback(...) function.
+Variables living here are mostly pointers to things on the heap:
+    - Calculator
+    - FDS Solver
+    - Add-coefficient Window
+    - The "menu" at the bottom of the screen
+    - List of coefficients containing coefficientcomponents
+    - Physical models (should be instrument which then contains physical models)
+ 
+Furthermore, other variables:
+    - State of the application
+    - State of the add-coefficient pop-up
+    - Pointers to the currently selected object and the currently edited object (if applicable)
+ 
+ // Other buttons located at the bottom of the application
+ OwnedArray<TextButton> modelButtons;
+ OwnedArray<Slider> coeffSliders;
+ ScopedPointer<TextButton> newButton;
+ ScopedPointer<ToggleButton> muteButton;
+ Label cpuUsage;
+ Label graphicsLabel;
+ Slider graphicsSlider;
+ 
+ bool mute = false;
+ 
+ std::vector<__m256d> testVec {100};
+ 
+ int numObject = 0;
+ 
+ // Audio variables
+ double fs;
+ int bufferSize;
+ */
 
 class MainComponent   : public AudioAppComponent,
-                        public Button::Listener,
-                        public Slider::Listener,
                         public Timer,
                         public KeyListener,
                         public ChangeListener
@@ -52,10 +83,6 @@ public:
     // Listen to objects returning a message
     void changeListenerCallback (ChangeBroadcaster* source) override;
     
-    // Buttons and sliders at the bottom of the application
-    void buttonClicked (Button* button) override;
-    void sliderValueChanged (Slider* slider) override;
-    
     // Create physical model function
     bool createPhysicalModel();
     
@@ -64,6 +91,8 @@ public:
     
     // Graphics timeer callback
     void timerCallback() override;
+    
+    void changeGraphicsSpeed();
     
     // Output clipping
     double clip (double output, double min = -1.0, double max = 1.0);
@@ -87,39 +116,31 @@ private:
     // The FDS Solver (collection of functions)
     ScopedPointer<FDSsolver> fdsSolver = nullptr;
     
-    OwnedArray<TextButton> modelButtons;
-    OwnedArray<Slider> coeffSliders;
-
+    // Window for adding a coefficient
     ScopedPointer<AddCoefficient> addCoeffWindow;
     
-    // List of coefficients containing coefficientcomponents
+    // List of all coefficients in the application (even though not all are visible) containing coefficientcomponents
     CoefficientList coefficientList;
 
-    OwnedArray<Label> coeffLabels;
-    std::vector<bool> coeffDynamic;
-
-    NamedValueSet coefficients;
+    // Window for adding a coefficient
+    ScopedPointer<BottomMenu> bottomMenu;
     
+    // Physical models
     OwnedArray<Object> objects;
     
+    // State of the application (normalAppState, newObjectState, editObjectState)
     ApplicationState appState;
+    
+    // State of the add-coefficient pop-up (normalCoeffState, editingCoeff)
     CoeffPopupState coeffPopupState = normalCoeffState;
     
+    // Pointers to objects
     Object* editingObject = nullptr;
     Object* currentlySelectedObject = nullptr;
-    bool repaintFlag = false;
-    
-    ScopedPointer<TextButton> newButton;
-    ScopedPointer<TextButton> muteButton;
-    Label cpuUsage;
-    Label graphicsLabel;
-    Slider graphicsSlider;
     
     bool mute = false;
     
     std::vector<__m256d> testVec {100};
-    
-    int numObject = 0;
     
     // Audio variables
     double fs;

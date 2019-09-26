@@ -15,14 +15,13 @@
 Object::Object (String equationString,
                 Equation stencil,
                 std::vector<Equation> termsInput,
-                int numBoundaries, int numObject) : stencil (stencil),
-                                                    equationString (equationString),
-                                                    h (stencil.getGridSpacing()),
-                                                    N (1.0 / h),
-                                                    numObject (numObject)
+                int numDim) : stencil (stencil),
+                                     equationString (equationString),
+                                     h (stencil.getGridSpacing()),
+                                     N (1.0 / h)
 {
     // Set boundary conditions
-    std::vector<BoundaryCondition> boundaries (numBoundaries, clamped);
+    std::vector<BoundaryCondition> boundaries (numDim * 2, clamped);
     for (int i = 0; i < boundaries.size(); ++i)
     {
         boundaryConditions.push_back (boundaries[i]);

@@ -15,6 +15,7 @@
 		28DC094044AEA44E85B36019 /* include_juce_gui_extra.mm in Sources */ = {isa = PBXBuildFile; fileRef = 94F88069127F323FB54F815E /* include_juce_gui_extra.mm */; };
 		2A12ADABBBEB120143C94D69 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE7C04355A5C658475219308 /* AVFoundation.framework */; };
 		30D6D1421292855881A4B3D6 /* include_juce_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = 10FA5529A1AE9B18252DC552 /* include_juce_core.mm */; };
+		361A70E180E28284E0369FEF /* Object2D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E73370583C12AF11ECFD4960 /* Object2D.cpp */; };
 		39DE86871560A94368880B39 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C57DB6526D057F87E28DA4D5 /* IOKit.framework */; };
 		3D629A030B2D346FB8468358 /* include_juce_audio_formats.mm in Sources */ = {isa = PBXBuildFile; fileRef = B9CD0F8B8B1D719C6CD4F723 /* include_juce_audio_formats.mm */; };
 		4CDB1ED3B066A4E5A6B29231 /* Object1D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 17118B69724D873A7DD9698B /* Object1D.cpp */; };
@@ -29,6 +30,7 @@
 		736A251662AC17613D5EA6D1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7C6DEB1872E5DDAA41E5214 /* OpenGL.framework */; };
 		7FC701BE93472B7E3DB8E3A3 /* Object0D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8392A6986A76ECA60EA516C3 /* Object0D.cpp */; };
 		8BBFDA1F3C637DD7E8C5ADC8 /* include_juce_video.mm in Sources */ = {isa = PBXBuildFile; fileRef = E05B8D11E163F41BDC5D80E6 /* include_juce_video.mm */; };
+		8CCFDC7CA768F705D19DEB32 /* BottomMenu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 572504F84C265E60738CF96A /* BottomMenu.cpp */; };
 		90755A4F564AEA82FAC2D644 /* include_juce_events.mm in Sources */ = {isa = PBXBuildFile; fileRef = DD445F6CF920D784986BDB2B /* include_juce_events.mm */; };
 		995AE99120D5817F8A0C71C1 /* Equation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8BAD8B78356440ABFD44AE7 /* Equation.cpp */; };
 		A183137C6A3036D51526EF54 /* AddCoefficient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDD4BFB64E9D98D6D3C1DC99 /* AddCoefficient.cpp */; };
@@ -75,6 +77,7 @@
 		4E821FBAE0CA20A33AA953DE /* Calculator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Calculator.cpp; path = ../../Source/Calculator.cpp; sourceTree = SOURCE_ROOT; };
 		50F795ED7FE001CFA9017D54 /* juce_video */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_video; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_video; sourceTree = "<absolute>"; };
 		52A0C740B0E446423E05428B /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		572504F84C265E60738CF96A /* BottomMenu.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BottomMenu.cpp; path = ../../Source/BottomMenu.cpp; sourceTree = SOURCE_ROOT; };
 		5B48EFBB879EE29E4819076A /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 		5D2606F9636465F2BF9A443F /* include_juce_data_structures.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_data_structures.mm; path = ../../JuceLibraryCode/include_juce_data_structures.mm; sourceTree = SOURCE_ROOT; };
 		62DCCAC62108B2D8FF9ADCAC /* Object.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Object.cpp; path = ../../Source/Object.cpp; sourceTree = SOURCE_ROOT; };
@@ -97,6 +100,7 @@
 		9BD0164ABC9AC13DA90B32F9 /* include_juce_opengl.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_opengl.mm; path = ../../JuceLibraryCode/include_juce_opengl.mm; sourceTree = SOURCE_ROOT; };
 		A08980DCC7F11A19EFCFADA6 /* GUIDefines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = GUIDefines.h; path = ../../Source/GUIDefines.h; sourceTree = SOURCE_ROOT; };
 		A10FB9CAF1737BAE0FADC8B0 /* juce_audio_utils */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_utils; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_audio_utils; sourceTree = "<absolute>"; };
+		A254E85ABBE9B444A7BAD97F /* BottomMenu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = BottomMenu.h; path = ../../Source/BottomMenu.h; sourceTree = SOURCE_ROOT; };
 		A38A57E8D6343C42DF5A01AA /* CoefficientComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CoefficientComponent.h; path = ../../Source/CoefficientComponent.h; sourceTree = SOURCE_ROOT; };
 		A492D0D285E1DBCE5DFAD76C /* FDSsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = FDSsolver.h; path = ../../Source/FDSsolver.h; sourceTree = SOURCE_ROOT; };
 		A8BAD8B78356440ABFD44AE7 /* Equation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Equation.cpp; path = ../../Source/Equation.cpp; sourceTree = SOURCE_ROOT; };
@@ -105,6 +109,7 @@
 		B61F578FB6E3BDF745DC1DC4 /* CoefficientList.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CoefficientList.h; path = ../../Source/CoefficientList.h; sourceTree = SOURCE_ROOT; };
 		B9CD0F8B8B1D719C6CD4F723 /* include_juce_audio_formats.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_formats.mm; path = ../../JuceLibraryCode/include_juce_audio_formats.mm; sourceTree = SOURCE_ROOT; };
 		C57DB6526D057F87E28DA4D5 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		CACF2495B17C26CF8A98F353 /* Object2D.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Object2D.h; path = ../../Source/Object2D.h; sourceTree = SOURCE_ROOT; };
 		CDD4BFB64E9D98D6D3C1DC99 /* AddCoefficient.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AddCoefficient.cpp; path = ../../Source/AddCoefficient.cpp; sourceTree = SOURCE_ROOT; };
 		CE015895D15599C1A4F4E3E8 /* juce_audio_basics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_basics; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_audio_basics; sourceTree = "<absolute>"; };
 		CE43DC31F167F2FDBBDC25A7 /* include_juce_audio_devices.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_devices.mm; path = ../../JuceLibraryCode/include_juce_audio_devices.mm; sourceTree = SOURCE_ROOT; };
@@ -117,6 +122,7 @@
 		E24D7CDFC4DC3651F56E825A /* include_juce_graphics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_graphics.mm; path = ../../JuceLibraryCode/include_juce_graphics.mm; sourceTree = SOURCE_ROOT; };
 		E2C7661EF6422A2DD75D6EF6 /* MainComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MainComponent.h; path = ../../Source/MainComponent.h; sourceTree = SOURCE_ROOT; };
 		E3D2AB841B7E9743C32FBEB2 /* Object1DAVX.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Object1DAVX.cpp; path = ../../Source/Object1DAVX.cpp; sourceTree = SOURCE_ROOT; };
+		E73370583C12AF11ECFD4960 /* Object2D.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Object2D.cpp; path = ../../Source/Object2D.cpp; sourceTree = SOURCE_ROOT; };
 		E7C6DEB1872E5DDAA41E5214 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		EC91C1CDA95C3DDAE8A3C149 /* include_juce_cryptography.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_cryptography.mm; path = ../../JuceLibraryCode/include_juce_cryptography.mm; sourceTree = SOURCE_ROOT; };
 		F0394D2678AAA5BB96DBFB78 /* juce_events */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_events; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_events; sourceTree = "<absolute>"; };
@@ -212,6 +218,8 @@
 				A08980DCC7F11A19EFCFADA6 /* GUIDefines.h */,
 				E3D2AB841B7E9743C32FBEB2 /* Object1DAVX.cpp */,
 				932442E18D7456AA448947B8 /* Object1DAVX.h */,
+				E73370583C12AF11ECFD4960 /* Object2D.cpp */,
+				CACF2495B17C26CF8A98F353 /* Object2D.h */,
 				17118B69724D873A7DD9698B /* Object1D.cpp */,
 				D18E3E1DA11B03B8949F90A1 /* Object1D.h */,
 				8392A6986A76ECA60EA516C3 /* Object0D.cpp */,
@@ -226,6 +234,8 @@
 				A492D0D285E1DBCE5DFAD76C /* FDSsolver.h */,
 				8AB82C42EC2AA22B79842817 /* CoefficientComponent.cpp */,
 				A38A57E8D6343C42DF5A01AA /* CoefficientComponent.h */,
+				572504F84C265E60738CF96A /* BottomMenu.cpp */,
+				A254E85ABBE9B444A7BAD97F /* BottomMenu.h */,
 				341FA567433CB28D96DA539A /* CoefficientList.cpp */,
 				B61F578FB6E3BDF745DC1DC4 /* CoefficientList.h */,
 				4E821FBAE0CA20A33AA953DE /* Calculator.cpp */,
@@ -366,6 +376,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				52C05084516059AC5A8F248A /* Object1DAVX.cpp in Sources */,
+				361A70E180E28284E0369FEF /* Object2D.cpp in Sources */,
 				4CDB1ED3B066A4E5A6B29231 /* Object1D.cpp in Sources */,
 				7FC701BE93472B7E3DB8E3A3 /* Object0D.cpp in Sources */,
 				F936EB9657A59E078535E21E /* Object.cpp in Sources */,
@@ -373,6 +384,7 @@
 				995AE99120D5817F8A0C71C1 /* Equation.cpp in Sources */,
 				C559C54A0BF09E9F850ED5F9 /* FDSsolver.cpp in Sources */,
 				E221DD0661F97B8D9EE0D744 /* CoefficientComponent.cpp in Sources */,
+				8CCFDC7CA768F705D19DEB32 /* BottomMenu.cpp in Sources */,
 				084B82B3F567B25ED0899EBF /* CoefficientList.cpp in Sources */,
 				1249868DDBABDA6AC1EEB59F /* Calculator.cpp in Sources */,
 				7095E3A99963DCF9DA0FFB95 /* MainComponent.cpp in Sources */,

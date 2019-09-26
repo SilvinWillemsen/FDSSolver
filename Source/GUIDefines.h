@@ -23,6 +23,21 @@
     #define OBJECT1D Object1D
 #endif
 
+/*
+    The GUIDefines class contains some global (static) variables that the entire application should know about.
+ */
+
+/* The StringCode class contains symbols and their respective 3-digit codes. The first digit determines the type of the symbol:
+ - 1: Mathematical operator (=, +, -)
+ - 2: Derivatives
+     00 - 03 : time
+     04 - 07 : space (1D)
+     08 - 09 : space (2D)
+ - 3: State variable u
+ - 900 is reserved for the button name of the add-coefficient button
+ - 901: Negative sign
+ */
+
 class StringCode
 {
     
@@ -137,10 +152,18 @@ enum Action
     removeCoeff,
     sliderMoved,
     
+    addCoeffAction,
+    createPMAction,
+    
     muteObject,
     editObject,
     removeObject,
     objectClicked,
+    
+    newObjectAction,
+    cancelNewObjectAction,
+    muteAction,
+    createPredefinedModel,
     
     caughtReturnKey,
 };

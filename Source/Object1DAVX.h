@@ -20,7 +20,7 @@
 class Object1DAVX    : public Object
 {
 public:
-    Object1DAVX (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<__m256d> testVec, int numObject);
+    Object1DAVX (String equationString, Equation stencil, std::vector<Equation> terms, std::vector<__m256d> testVec);
     ~Object1DAVX();
 
     void paint (Graphics& g) override;

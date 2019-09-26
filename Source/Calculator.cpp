@@ -186,13 +186,13 @@ void Calculator::buttonClicked (Button* button)
             return;
         std::cout << "createPMclicked" << std::endl;
         createPMalreadyClicked = true;
-        changeMessage = createPMMessage;
+        action = createPMAction;
         sendChangeMessage();
     }
     
     else if (button == coeff)
     {
-        changeMessage = addCoeffMessage;
+        action = addCoeffAction;
         sendChangeMessage();
     }
     else if (button == backSpace)

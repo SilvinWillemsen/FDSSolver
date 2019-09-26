@@ -12,7 +12,7 @@
 #include "Object1D.h"
 
 //==============================================================================
-Object1D::Object1D (String equationString, Equation stencil, std::vector<Equation> terms, int numObject) : Object (equationString, stencil, terms, 2, numObject)
+Object1D::Object1D (String equationString, Equation stencil, std::vector<Equation> terms) : Object (equationString, stencil, terms, 1)
 {
     uVecs.reserve (stencil.getTimeSteps()); //resize according to amount of vectors in stencil
     
@@ -120,19 +120,7 @@ void Object1D::calculateFDS()
 {
     // input states and coefficients in vector form
     updateEq (u[0], u[1], u[2], &stencilVectorForm[0]);
-
     
-//    if (u[0][static_cast<int>(N/2)] != 0)
-//    {
-//        for (int l = 0; l < 53; ++l)
-//            std::cout << u[0][l] << " ";
-//        
-//        std::cout << std::endl;
-//    }
-//    if (u[0][static_cast<int>(N / 2)] != 0)
-//    {
-//        std::cout << "wait" << std::endl;
-//    }
 ///// OLD STUFF /////
 //    std::cout << "wait" << std::endl;
 //    for (int l = (boundaryConditions[0] == simplySupported ? 1 : 2);
