@@ -13,6 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GUIDefines.h"
 #include "Equation.h"
+#include "FDSsolver.h"
 
 //==============================================================================
 /*
@@ -26,7 +27,7 @@ class Calculator    : public Component,
 
 {
 public:
-    Calculator();
+    Calculator (FDSsolver* fdsSolver);
     ~Calculator();
 
     void paint (Graphics&) override;
@@ -34,10 +35,14 @@ public:
 
     void buttonClicked (Button* button) override;
     bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
-    bool refresh();
-    TextButton* getButton (String buttonName);
     
-    void clickButton (String buttonName) { for (auto button : buttons) if (button->getName() == buttonName) buttonClicked (button); }
+    // Refresh the calculator (especially enabling / disabling buttons)
+    bool refresh();
+    
+    // Get a specific button
+    std::shared_ptr<TextButton> getButton (String buttonName);
+    
+    void clickButton (String buttonName) { for (auto button : buttons) if (button->getName() == buttonName) buttonClicked (button.get()); }
     
     Action getAction() { return action; };
     
@@ -55,48 +60,58 @@ public:
     
     void setApplicationState (ApplicationState state);
     
+    void setDimension (int dim) { curDim = dim; };
+    int getDimension() { return curDim; };
+    
     bool createPMalreadyClicked = false;
     bool returnKeyIsDown = false;
     
+    void changeDimension (int dim = -1);
+    
 private:
-    OwnedArray<TextButton> buttons;
+    std::vector<std::shared_ptr<TextButton>> buttons;
     OwnedArray<Label> labels;
     String equationString;
     
     StringCode stringCode;
     
-    ScopedPointer<Label> textBox = nullptr;
+    std::unique_ptr<Label> textBox;
     
-    TextButton* createPM = nullptr;
-    TextButton* clearEq = nullptr;
+    std::shared_ptr<TextButton> createPM;
+    std::shared_ptr<TextButton> clearEq;
     
     int startOfOperators;
     String deltaString;
     
-    TextButton* plus = nullptr;
-    TextButton* minus = nullptr;
-    TextButton* equals = nullptr;
+    std::shared_ptr<TextButton> plus;
+    std::shared_ptr<TextButton> minus;
+    std::shared_ptr<TextButton> equals;
     
-    TextButton* deltaForwT = nullptr;
-    TextButton* deltaBackT = nullptr;
-    TextButton* deltaCentT = nullptr;
-    TextButton* deltaTT = nullptr;
+    std::shared_ptr<TextButton> deltaForwT;
+    std::shared_ptr<TextButton> deltaBackT;
+    std::shared_ptr<TextButton> deltaCentT;
+    std::shared_ptr<TextButton> deltaTT;
     
-    TextButton* deltaForwX = nullptr;
-    TextButton* deltaBackX = nullptr;
-    TextButton* deltaCentX = nullptr;
-    TextButton* deltaXX = nullptr;
+    std::shared_ptr<TextButton> deltaForwX;
+    std::shared_ptr<TextButton> deltaBackX;
+    std::shared_ptr<TextButton> deltaCentX;
+    std::shared_ptr<TextButton> deltaXX;
     
-    TextButton* minusSign = nullptr;
+    std::shared_ptr<TextButton> minusSign;
     
-    TextButton* coeff = nullptr;
-    TextButton* backSpace = nullptr;
+    std::shared_ptr<TextButton> coeff;
+    std::shared_ptr<TextButton> backSpace;
+    std::shared_ptr<TextButton> changeDim;
     
-    TextButton* uLN = nullptr;
+    std::shared_ptr<TextButton> uLN;
     
     Action action = noAction;
     
     ApplicationState appState;
+    
+    FDSsolver* fdsSolver;
+    
+    int curDim = 1;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Calculator)
 };

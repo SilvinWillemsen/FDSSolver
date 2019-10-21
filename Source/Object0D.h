@@ -26,7 +26,7 @@ public:
     void resized() override;
     
     void calculateFDS() override;
-    double getOutput (double ratio) override { return u[0][0]; };
+    double getOutput (double unUsed1, double unUsed2) override { return u[0][0]; };
     void updateStates() override;
     void setZero() override;
     

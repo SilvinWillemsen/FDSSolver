@@ -36,6 +36,7 @@
 		A183137C6A3036D51526EF54 /* AddCoefficient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDD4BFB64E9D98D6D3C1DC99 /* AddCoefficient.cpp */; };
 		A2C8779323F8240B07CA0831 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD9D3001E89D8B8ED5BE98A8 /* QuartzCore.framework */; };
 		AFAE8619F9D5206A69F1967C /* include_juce_graphics.mm in Sources */ = {isa = PBXBuildFile; fileRef = E24D7CDFC4DC3651F56E825A /* include_juce_graphics.mm */; };
+		AFE2BADDB9D8EFA82E3AB1D6 /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F56FFABAE1F51C8FB2AB0738 /* CoreAudioKit.framework */; };
 		B6B357D37F92825B459C945E /* include_juce_audio_basics.mm in Sources */ = {isa = PBXBuildFile; fileRef = 309D9C0090833FA8CCDE96C9 /* include_juce_audio_basics.mm */; };
 		B71DFDF105B4D4FAB0D0DE02 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0D3B1A62D8C4FC515A44F2FB /* Cocoa.framework */; };
 		B86FCDC47D8901B71BFD0620 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1EFA1FAAB90E13DC8C003F24 /* Accelerate.framework */; };
@@ -126,6 +127,7 @@
 		E7C6DEB1872E5DDAA41E5214 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		EC91C1CDA95C3DDAE8A3C149 /* include_juce_cryptography.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_cryptography.mm; path = ../../JuceLibraryCode/include_juce_cryptography.mm; sourceTree = SOURCE_ROOT; };
 		F0394D2678AAA5BB96DBFB78 /* juce_events */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_events; path = /Users/SilvinW/repositories/newJUCE/JUCE/modules/juce_events; sourceTree = "<absolute>"; };
+		F56FFABAE1F51C8FB2AB0738 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = System/Library/Frameworks/CoreAudioKit.framework; sourceTree = SDKROOT; };
 		F651C3730ED71C3AEEC8AA02 /* FDSsolver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FDSsolver.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC095E454E03576AC59112B2 /* MainComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = MainComponent.cpp; path = ../../Source/MainComponent.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -142,6 +144,7 @@
 				5DF38F8D5E0E08C1FCD9BFB9 /* Carbon.framework in Frameworks */,
 				B71DFDF105B4D4FAB0D0DE02 /* Cocoa.framework in Frameworks */,
 				2011B977571A1215A8E1B138 /* CoreAudio.framework in Frameworks */,
+				AFE2BADDB9D8EFA82E3AB1D6 /* CoreAudioKit.framework in Frameworks */,
 				D568E7F4099D94A8C2AE209E /* CoreMedia.framework in Frameworks */,
 				54900C9B9F0C8C6B510FDBDA /* CoreMIDI.framework in Frameworks */,
 				0013C0A525C23CD7BDB005F5 /* DiscRecording.framework in Frameworks */,
@@ -201,6 +204,7 @@
 				683DC161FC52FA6A95D1D15E /* Carbon.framework */,
 				0D3B1A62D8C4FC515A44F2FB /* Cocoa.framework */,
 				1E6FB9AAA2CFAE3A9524ED6B /* CoreAudio.framework */,
+				F56FFABAE1F51C8FB2AB0738 /* CoreAudioKit.framework */,
 				2D7D0C44E95908634986BAD1 /* CoreMedia.framework */,
 				3B6DDE5559252F47545656A6 /* CoreMIDI.framework */,
 				6FB7A8BACB6EB19C74C2EBD9 /* DiscRecording.framework */,
@@ -319,12 +323,15 @@
 		1735841F1CA53FAA3A31412B /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0930;
+				LastUpgradeCheck = 1100;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
 					E3FA8A3A9F02F56D555EEBCD = {
 						SystemCapabilities = {
 							com.apple.ApplicationGroups.iOS = {
+								enabled = 0;
+							};
+							com.apple.HardenedRuntime = {
 								enabled = 0;
 							};
 							com.apple.InAppPurchase = {
@@ -349,6 +356,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 03882B5506F45F2BD35E520F /* Source */;
 			projectDirPath = "";

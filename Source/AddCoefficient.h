@@ -43,7 +43,7 @@ public:
     void setDynamic (bool val) { dynamicBool = val; dynamic.setToggleState (val, dontSendNotification); };
     
     void setCoeffName (String name) { coeffTextBox.setText (name); };
-    void setCoeffValue (var value) { valueTextBox.setText (String(static_cast<double> (value))); };
+    void setCoeffValue (var value = -1);
     
     TextEditor* getCoeffTextBoxPtr() { return &coeffTextBox; };
     

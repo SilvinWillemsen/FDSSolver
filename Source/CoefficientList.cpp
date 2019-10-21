@@ -18,11 +18,11 @@ CoefficientList::CoefficientList()
     // initialise any special settings that your component needs.
     addAndMakeVisible (list);
     
-    coeffTopLabel = new Label();
+    coeffTopLabel = std::make_unique<Label>();
     coeffTopLabel->setColour (Label::textColourId, Colours::white);
     coeffTopLabel->setText ("Coefficients", dontSendNotification);
     coeffTopLabel->setFont (Font (18.0f));
-    addAndMakeVisible (coeffTopLabel);
+    addAndMakeVisible (coeffTopLabel.get());
     coeffTopLabel->setVisible (false);
     
     list.setColour(ListBox::backgroundColourId, getLookAndFeel().findColour (ResizableWindow::backgroundColourId));

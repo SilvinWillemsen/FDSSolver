@@ -120,7 +120,7 @@ void Object1DAVX::calculateFDS()
     }
 }
 
-double Object1DAVX::getOutput (double ratio)
+double Object1DAVX::getOutput (double ratio, double unUsed)
 {
     int idx = floor (N * ratio);
     return (*u[1])[idx];
@@ -145,7 +145,7 @@ void Object1DAVX::excite()
         excited = false;
         int width = floor((N * 2.0) / 5.0) / 2.0;
         int loc = floor(N * static_cast<float>(getXLoc()) / static_cast<float>(getWidth()));
-        int startIdx = clamp(loc - width / 2.0, simplySupported ? 1 : 2, simplySupported ? N-1-width : N-2-width);
+        int startIdx = clamp (loc - width / 2.0, simplySupported ? 1 : 2, simplySupported ? N-1-width : N-2-width);
         int vectIdx = startIdx / 4;
         int inVectIdx = startIdx % 4 - 1;
         std::vector<double> AVXvect (4, 0.0);

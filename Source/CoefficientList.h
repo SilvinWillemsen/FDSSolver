@@ -54,7 +54,7 @@ public:
     void setApplicationState (ApplicationState applicationState, bool init);
     
 private:
-    ScopedPointer<Label> coeffTopLabel;
+    std::unique_ptr<Label> coeffTopLabel;
     
     std::vector<std::shared_ptr<CoefficientComponent>> coefficients;
     ListBox list { {}, this };

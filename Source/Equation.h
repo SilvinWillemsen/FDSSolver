@@ -24,7 +24,6 @@ class Equation
 {
     
 public:
-    
 
     Equation (int amountOfTimeSteps, int amountOfGridPoints, bool createULN = false);
     
@@ -88,13 +87,16 @@ public:
     int getStencilWidth() { return static_cast<int> (uCoeffs[0].size()); };
     int getTimeSteps() { return static_cast<int> (uCoeffs.size()); };
     int getNumPoints() { return N; };
-    void setNumPointsFromGridSpacing (double hToSet) { h = hToSet; N = floor(1.0 / hToSet); };
+    void setNumPointsFromGridSpacing (double hToSet) { h = hToSet; N = floor(1.0 / pow (hToSet, dim)); };
     
     double getGridSpacing() { return h; };
     
     void incPowerOfhDivision() { ++powerOfhDivision; };
     
     bool isSymmetric();
+    
+    int getDimension() { return dim; };
+    void setDimension (int dimensh) { dim = dimensh; };
     
 private:
     
@@ -104,5 +106,7 @@ private:
     double h = 1;
     
     double powerOfhDivision = 0;
+    
+    int dim = 0;
 };
 

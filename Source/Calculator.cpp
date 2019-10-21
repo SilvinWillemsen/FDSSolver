@@ -12,98 +12,100 @@
 #include "Calculator.h"
 
 //==============================================================================
-Calculator::Calculator()
+Calculator::Calculator (FDSsolver* fdsSolver) : fdsSolver (fdsSolver)
 {
-    textBox = new Label();
+    textBox = std::make_unique<Label>();
     textBox->setColour(Label::textColourId, Colours::black);
     textBox->setColour(Label::backgroundColourId, Colours::white);
     String fontName ("Latin Modern Math");
-    String style ("Italic");
+    String style ("Regular");
     textBox->setFont (Font (fontName, style, 16.0));
     
-    addAndMakeVisible(textBox);
+    addAndMakeVisible (*textBox);
     
     // Create all buttons
-    buttons.add (new TextButton ("createPM"));
+    buttons.push_back(std::make_shared<TextButton> ("createPM"));
     createPM = buttons[0];
     createPM->setButtonText ("Create");
     createPM->addShortcut (KeyPress (KeyPress::returnKey));
     
-    buttons.add (new TextButton("clearEq"));
+    buttons.push_back(std::make_shared<TextButton> ("clearEq"));
     clearEq = buttons[1];
-    clearEq->setButtonText("Clear");
+    clearEq->setButtonText ("Clear");
     
     // indicate where operators start
     startOfOperators = buttons.size();
     
     deltaString = String(CharPointer_UTF8 ("\xce\xb4"));
     
-    buttons.add (new TextButton("100"));
+    buttons.push_back(std::make_shared<TextButton> ("100"));
     equals = buttons[buttons.size() - 1];
-    equals->setButtonText(" = ");
+    equals->setButtonText (" = ");
     
-    buttons.add (new TextButton("101"));
+    buttons.push_back(std::make_shared<TextButton> ("101"));
     plus = buttons[buttons.size() - 1];
-    plus->setButtonText(" + ");
+    plus->setButtonText (" + ");
     
-    buttons.add (new TextButton("102"));
+    buttons.push_back(std::make_shared<TextButton> ("102"));
     minus = buttons[buttons.size() - 1];
-    minus->setButtonText(" " + String(CharPointer_UTF8 ("\xe2\x80\x93")) + " ");
+    minus->setButtonText  (" " + String(CharPointer_UTF8 ("\xe2\x80\x93")) + " ");
     
-    buttons.add (new TextButton("901"));
+    buttons.push_back(std::make_shared<TextButton> ("901"));
     minusSign = buttons[buttons.size() - 1];
-    minusSign->setButtonText("(-)");
+    minusSign->setButtonText ("(-)");
     
-    buttons.add (new TextButton("200"));
+    buttons.push_back(std::make_shared<TextButton> ("200"));
     deltaForwT = buttons[buttons.size() - 1];
-    deltaForwT->setButtonText(deltaString + "t+");
+    deltaForwT->setButtonText (deltaString + "t+");
     
-    buttons.add (new TextButton("201"));
+    buttons.push_back(std::make_shared<TextButton> ("201"));
     deltaBackT = buttons[buttons.size() - 1];
-    deltaBackT->setButtonText(deltaString + "t-");
+    deltaBackT->setButtonText (deltaString + "t-");
     
-    buttons.add (new TextButton("202"));
+    buttons.push_back(std::make_shared<TextButton> ("202"));
     deltaCentT = buttons[buttons.size() - 1];
-    deltaCentT->setButtonText(deltaString + "t" + String (CharPointer_UTF8 ("\xc2\xb7")));
+    deltaCentT->setButtonText (deltaString + "t" + String (CharPointer_UTF8 ("\xc2\xb7")));
     
-    buttons.add (new TextButton("203"));
+    buttons.push_back(std::make_shared<TextButton> ("203"));
     deltaTT = buttons[buttons.size() - 1];
-    deltaTT->setButtonText(deltaString + "tt");
+    deltaTT->setButtonText (deltaString + "tt");
     
-    buttons.add (new TextButton("204"));
+    buttons.push_back(std::make_shared<TextButton> ("204"));
     deltaForwX = buttons[buttons.size() - 1];
-    deltaForwX->setButtonText(deltaString + "x+");
+    deltaForwX->setButtonText (deltaString + "x+");
     
-    buttons.add (new TextButton("205"));
+    buttons.push_back(std::make_shared<TextButton> ("205"));
     deltaBackX = buttons[buttons.size() - 1];
-    deltaBackX->setButtonText(deltaString + "x-");
+    deltaBackX->setButtonText (deltaString + "x-");
     
-    buttons.add (new TextButton("206"));
+    buttons.push_back(std::make_shared<TextButton> ("206"));
     deltaCentX = buttons[buttons.size() - 1];
-    deltaCentX->setButtonText(deltaString + "x" + String (CharPointer_UTF8 ("\xc2\xb7")));
+    deltaCentX->setButtonText (deltaString + "x" + String (CharPointer_UTF8 ("\xc2\xb7")));
     
-    buttons.add (new TextButton("207"));
+    buttons.push_back(std::make_shared<TextButton> ("207"));
     deltaXX = buttons[buttons.size() - 1];
-    deltaXX->setButtonText(deltaString + "xx");
+    deltaXX->setButtonText (deltaString + "xx");
     
-    buttons.add (new TextButton("300"));
+    buttons.push_back(std::make_shared<TextButton> ("300"));
     uLN = buttons[buttons.size() - 1];
-    uLN->setButtonText("u");
+    uLN->setButtonText ("u");
     
-    buttons.add (new TextButton("900"));
+    buttons.push_back(std::make_shared<TextButton> ("900"));
     coeff = buttons[buttons.size() - 1];
-    coeff->setButtonText("coeff");
+    coeff->setButtonText ("coeff");
     
-    buttons.add (new TextButton("backspace"));
+    buttons.push_back(std::make_shared<TextButton> ("backspace"));
     backSpace = buttons[buttons.size() - 1];
-    backSpace->setButtonText(String(CharPointer_UTF8 ("\xe2\x8c\xab")));
+    backSpace->setButtonText (String(CharPointer_UTF8 ("\xe2\x8c\xab")));
     
-    
+    buttons.push_back(std::make_shared<TextButton> ("changedim"));
+    changeDim = buttons[buttons.size() - 1];
+    changeDim->setButtonText ("1D");
     
     for (auto button : buttons)
     {
         button->addListener(this);
-        addAndMakeVisible (button);
+        addAndMakeVisible (button.get());
     }
 
     addKeyListener (this);
@@ -163,10 +165,10 @@ void Calculator::buttonClicked (Button* button)
     KeyPress key = KeyPress (KeyPress::returnKey);
     if (key.KeyPress::isCurrentlyDown())
     {
-        if (button == createPM && !createPMalreadyClicked)
+        if (button == createPM.get() && !createPMalreadyClicked)
         {
         }
-        else if (button != createPM)
+        else if (button != createPM.get())
         {
             button->setState (Button::ButtonState::buttonNormal);
             return;
@@ -175,12 +177,12 @@ void Calculator::buttonClicked (Button* button)
         createPMalreadyClicked = false;
     }
     
-    if (button == clearEq)
+    if (button == clearEq.get())
     {
         clearEquation();
     }
     
-    else if (button == createPM)
+    else if (button == createPM.get())
     {
         if (createPMalreadyClicked)
             return;
@@ -190,14 +192,19 @@ void Calculator::buttonClicked (Button* button)
         sendChangeMessage();
     }
     
-    else if (button == coeff)
+    else if (button == coeff.get())
     {
         action = addCoeffAction;
         sendChangeMessage();
     }
-    else if (button == backSpace)
+    else if (button == backSpace.get())
     {
         equationString = equationString.dropLastCharacters (4);
+    }
+    else if (button == changeDim.get())
+    {
+        changeDimension();
+        
     } else {
         equationString += encoder (button->getButtonText()) + "_";
     }
@@ -206,13 +213,13 @@ void Calculator::buttonClicked (Button* button)
 
 bool Calculator::keyPressed (const KeyPress& key, Component* originatingComponent)
 {
-    
+    return false;
 }
 
 bool Calculator::refresh()
 {
     bool disableCoeffs;
-    
+
     // obtain the type of the last character
     int firstInt;
     if (equationString.length() == 0)
@@ -224,29 +231,9 @@ bool Calculator::refresh()
         firstInt = std::isdigit(*test) ? firstChar.getIntValue() : 9;
     }
     
+    // Fill the vector with not allowed characters and enable / disable buttons based on this
     std::vector<int> notAllowedCharacters;
-    switch (firstInt)
-    {
-        case 0:
-            notAllowedCharacters.push_back(1);
-            break;
-        case 1:
-            notAllowedCharacters.push_back(1);
-            break;
-        case 2:
-            notAllowedCharacters.push_back(1);
-            notAllowedCharacters.push_back(9);
-            break;
-        case 3:
-            notAllowedCharacters.push_back(2);
-            notAllowedCharacters.push_back(3);
-            notAllowedCharacters.push_back(9);
-            break;
-        case 9:
-            if (equationString.substring(equationString.length() - 4, equationString.length() - 1) == "901")
-                notAllowedCharacters.push_back(1);
-            break;
-    }
+    fdsSolver->checkNotAllowedCharacters (firstInt, notAllowedCharacters);
     
     // refresh which buttons are active
     for (int i = 0; i < buttons.size(); ++i)
@@ -258,6 +245,23 @@ bool Calculator::refresh()
         } else {
             buttons[i]->setEnabled (true);
         }
+    }
+    
+    // If the equation contains spatial derivatives, disable the ability to change the dimension
+    if (fdsSolver->checkDimension (equationString) != 0)
+        changeDim->setEnabled (false);
+    else
+        changeDim->setEnabled (true);
+    
+    // If the dimension is 0D, disable the spatial derivative buttons
+    if (curDim == 0)
+    {
+        for (int i = 10; i < 14; ++i)
+                buttons[i]->setEnabled (false);
+    }
+    else if (curDim == 2)
+    {
+        buttons[10]->setEnabled (false);
     }
     
     // in the case of a (-)
@@ -283,7 +287,7 @@ bool Calculator::refresh()
     return disableCoeffs;
 }
 
-TextButton* Calculator::getButton (String buttonName)
+std::shared_ptr<TextButton> Calculator::getButton (String buttonName)
 {
     if (buttonName == "coeff")
         return coeff;
@@ -374,4 +378,37 @@ void Calculator::setApplicationState (ApplicationState state)
             break;
     }
     appState = state;
+}
+
+void Calculator::changeDimension (int dim)
+{
+    if (dim != -1)
+        curDim = dim;
+    else // increase dimension
+        curDim = (curDim + 1) % (GUIDefines::maxDim + 1);
+    
+    switch (curDim)
+    {
+        case 0:
+            changeDim->setButtonText ("0D");
+            buttons[11]->setButtonText (deltaString + "x+");
+            buttons[12]->setName ("205");
+            buttons[12]->setButtonText (deltaString + "x-");
+            buttons[12]->setName ("206");
+            buttons[13]->setButtonText (deltaString + "xx");
+            buttons[13]->setName ("207");
+            break;
+        case 1:
+            changeDim->setButtonText ("1D");
+            break;
+        case 2:
+            changeDim->setButtonText ("2D");
+            buttons[11]->setButtonText (deltaString + "xx");
+            buttons[11]->setName ("208");
+            buttons[12]->setButtonText (deltaString + "yy");
+            buttons[12]->setName ("209");
+            buttons[13]->setButtonText (CharPointer_UTF8 ("\xce\x94"));
+            buttons[13]->setName ("210");
+            break;
+    }
 }

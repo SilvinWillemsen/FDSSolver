@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="yHXHd5" name="FDSsolver" projectType="guiapp" jucerVersion="5.4.1">
+<JUCERPROJECT id="yHXHd5" name="FDSsolver" projectType="guiapp" jucerVersion="5.4.4">
   <MAINGROUP id="iOQDaH" name="FDSsolver">
     <GROUP id="{C69A153F-C0F4-07C6-ECD0-F265B52BC998}" name="Source">
       <FILE id="Okc5f4" name="GUIDefines.h" compile="0" resource="0" file="Source/GUIDefines.h"/>

@@ -15,11 +15,26 @@
 Object::Object (String equationString,
                 Equation stencil,
                 std::vector<Equation> termsInput,
-                int numDim) : stencil (stencil),
-                                     equationString (equationString),
-                                     h (stencil.getGridSpacing()),
-                                     N (1.0 / h)
+                int numDim) :    stencil (stencil),
+                                 equationString (equationString),
+                                 h (stencil.getGridSpacing()), dim (numDim)
 {
+    N = stencil.getNumPoints();
+
+    // Set grid spacing
+    switch (numDim)
+    {
+        case 0:
+            h = 0;
+            break;
+        case 1:
+            h = 1.0 / N;
+            break;
+        case 2:
+            h = 1.0 / sqrt (N);
+            break;
+    }
+
     // Set boundary conditions
     std::vector<BoundaryCondition> boundaries (numDim * 2, clamped);
     for (int i = 0; i < boundaries.size(); ++i)
@@ -158,6 +173,7 @@ void Object::timerCallback()
 void Object::refreshCoefficients()
 {
     // reset stencil
+    int dim = stencil.getDimension();
     stencil = Equation (stencil.getTimeSteps(), stencil.getStencilWidth());
     stencilVectorForm.clear();
     stencilVectorForm.shrink_to_fit();
@@ -210,6 +226,7 @@ void Object::refreshCoefficients()
             stencilVectorForm.push_back(stencil.getUCoeffAt(j, i));
             
     stencilVectorForm.shrink_to_fit();
+    stencil.setDimension (dim);
     refreshCoefficientsFlag = false;
 }
 
@@ -237,6 +254,7 @@ void Object::setApplicationState (ApplicationState applicationState)
     resized();
 }
 
+#ifdef CREATECCODE
 void Object::updateEqGenerator (String& updateEqString)
 {
     void *handle;
@@ -249,8 +267,15 @@ void Object::updateEqGenerator (String& updateEqString)
 
     FILE *fd= fopen("code.c", "w");
     
-    fprintf(fd, "#include <stdio.h>\n"
+    if (dim != 2)
+        fprintf(fd, "#include <stdio.h>\n"
                 "void updateEq(double* uNext, double* u, double* uPrev, double* coeffs)\n"
+                    "{\n"
+                    "%s\n"
+                    "}", eq);
+    else
+        fprintf(fd, "#include <stdio.h>\n"
+                "void updateEq(double* uNext, double* u, double* uPrev, double* coeffs, int Nx)\n"
                 "{\n"
                 "%s\n"
                 "}", eq);
@@ -312,3 +337,4 @@ void Object::updateEqGenerator (String& updateEqString)
         exit(1);
     }
 }
+#endif

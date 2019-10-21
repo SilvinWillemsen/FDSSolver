@@ -11,21 +11,15 @@
 //==============================================================================
 MainComponent::MainComponent()
 {
-    calculator = new Calculator();
-    calculator->addChangeListener (this);
-    addAndMakeVisible (calculator);
     
-    addCoeffWindow = new AddCoefficient();
+    addCoeffWindow = std::make_unique<AddCoefficient>();
     addAndMakeVisible (coefficientList);
     
-    bottomMenu = new BottomMenu();
+    bottomMenu = std::make_unique<BottomMenu>();
     bottomMenu->addChangeListener (this);
-    addAndMakeVisible (bottomMenu);
-
+    addAndMakeVisible (bottomMenu.get());
     
     addKeyListener (this);
-    
-    changeAppState (normalAppState);
 
     // specify the number of input and output channels that we want to open
     setAudioChannels (2, 2);
@@ -46,17 +40,19 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRate)
 {
-    // This function will be called when the audio device is started, or when
-    // its settings (i.e. sample rate, block size, etc) are changed.
-
-    // You can use this function to initialise any resources you might need,
-    // but be careful - it will be called on the audio thread, not the GUI thread.
-
-    // For more details, see the help for AudioProcessor::prepareToPlay()
     fs = sampleRate;
     bufferSize = samplesPerBlockExpected;
-    fdsSolver = new FDSsolver (&coefficientList, GUIDefines::debug ? 1.0 : 1.0 / fs);// / fs);
-//    equation =
+    
+    // create an instance of the FDSsolver
+    fdsSolver = std::make_unique<FDSsolver> (&coefficientList, GUIDefines::debug ? 1.0 : 1.0 / fs);// / fs);
+    
+    // create an instance of the Calculator
+    calculator = std::make_unique<Calculator> (fdsSolver.get());
+    calculator->addChangeListener (this);
+    addAndMakeVisible (*calculator);
+
+    changeAppState (normalAppState);
+    
     resized();
 }
 
@@ -88,7 +84,7 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
         {
             object->excite();
             object->calculateFDS();
-            output = output + object->getOutput (0.3);
+            output = output + object->getOutput (0.3, 0.3);
             object->updateStates();
         }
         if (!mute)
@@ -148,9 +144,9 @@ void MainComponent::addCoefficient (bool automatic, String name, double val, boo
     int dlgModal = -1;
     if (!automatic)
     {
-        addAndMakeVisible (addCoeffWindow);
+        addAndMakeVisible (*addCoeffWindow);
         dlg.dialogTitle = TRANS (addCoeffWindow->getCoeffPopupState() == normalCoeffState ? "Add Coefficient" : "Edit Coefficient");
-        dlg.content.set (addCoeffWindow, false);
+        dlg.content.set (addCoeffWindow.get(), false);
         addCoeffWindow->setKeyboardFocus();
         dlgModal = dlg.runModal();
     }
@@ -186,6 +182,9 @@ void MainComponent::addCoefficient (bool automatic, String name, double val, boo
         }
         
         resized();
+    } else {
+        addCoeffWindow->setCoeffName ("");
+        addCoeffWindow->setCoeffValue();
     }
     
     // always set the dynamic tickbox of the addCoeffWindow to false
@@ -194,7 +193,7 @@ void MainComponent::addCoefficient (bool automatic, String name, double val, boo
 
 void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
 {
-    if (source == calculator)
+    if (source == calculator.get())
     {
         switch (calculator->getAction())
         {
@@ -212,7 +211,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
         return;
     }
     
-    if (source == bottomMenu)
+    if (source == bottomMenu.get())
     {
         switch (bottomMenu->getAction())
         {
@@ -233,7 +232,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                 mute = !mute;
                 break;
             case caughtReturnKey:
-                calculator->buttonClicked (calculator->getButton("createPM"));
+                calculator->buttonClicked (calculator->getButton("createPM").get());
                 break;
             default:
                 break;
@@ -252,6 +251,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                 case editObject:
                     calculator->setEquationString (object->getEquationString());
+                    calculator->changeDimension (object->getDimension());
                     calculator->refresh();
                     coefficientList.loadCoefficientsFromObject (object->getCoefficientComponents());
                     editingObject = object;
@@ -259,10 +259,11 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                     
                 case removeObject:
-                    
+#ifdef CREATECCODE
                     systemInstr = "rm " + String (object->getCurName()) + ".so \n rm -R " + String (object->getCurName()) + ".so.dSYM";
                     system (static_cast<const char*>(systemInstr.toUTF8()));
                     objects.removeObject (object);
+#endif
                     calculator->clearEquation();
                     coefficientList.emptyCoefficientList();
                     if (appState != normalAppState)
@@ -271,6 +272,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     
                 case objectClicked:
                     currentlySelectedObject = object;
+                    calculator->changeDimension (object->getDimension());
                     calculator->setEquationString (object->getEquationString());
                     repaint();
                     coefficientList.loadCoefficientsFromObject (object->getCoefficientComponents());
@@ -314,7 +316,7 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
                     break;
                     
                 case caughtReturnKey:
-                    calculator->buttonClicked (calculator->getButton("createPM"));
+                    calculator->buttonClicked (calculator->getButton("createPM").get());
                     break;
                 default:
                     break;
@@ -326,12 +328,12 @@ void MainComponent::changeListenerCallback (ChangeBroadcaster* source)
 
 bool MainComponent::createPhysicalModel()
 {
-    
     calculator->refresh();
     String equationString = calculator->getEquationString();
-    int amountOfTimeSteps = fdsSolver->getStencilWidth (equationString, false);
-    int stencilWidth = fdsSolver->getStencilWidth (equationString, true);
+    int amountOfTimeSteps = fdsSolver->getStencilWidthFromEqString (equationString, false);
+    int stencilWidth = fdsSolver->getStencilWidthFromEqString (equationString, true);
     Equation stencil (amountOfTimeSteps, stencilWidth);
+    stencil.setDimension (fdsSolver->checkDimension (equationString));
     
     Array<var> coefficientTermIndex;
     std::vector<Equation> terms;
@@ -342,15 +344,15 @@ bool MainComponent::createPhysicalModel()
     // Solve the equation
     if (fdsSolver->solve (equationString, stencil, &currentCoefficients, coefficientTermIndex, terms))
     {
-        Object* newObject;objects.indexOf (editingObject);
+        Object* newObject;
         
         // create 0D object
-        if (stencilWidth == 1)
+        switch (stencil.getDimension())
         {
-            newObject = new Object0D (equationString, stencil, terms);
-        }
-        else
-        {
+            case 0:
+                newObject = new Object0D (equationString, stencil, terms);
+                break;
+            case 1:
 //            for (int i = 0; i < (eq.getNumPoints() + 3) / 4; ++i)
 //                testVec[i] = _mm256_setr_pd (0.0, 0.0, 0.0, 0.0);
 //            testVec.erase (testVec.begin() + (eq.getNumPoints() + 3) / 4, testVec.end());
@@ -360,6 +362,13 @@ bool MainComponent::createPhysicalModel()
     #else
                 newObject = new Object1D (equationString, stencil, terms);
     #endif
+                break;
+            case 2:
+                newObject = new Object2D (equationString, stencil, terms);
+                break;
+            default:
+                std::cout << "Stencil has no dimension" << std::endl;
+                return false;
         }
         
         // only add the coefficients that are actually used by the newly created object
@@ -370,9 +379,12 @@ bool MainComponent::createPhysicalModel()
                 newObject->setCoefficientComponent (coeffComp);
 
         newObject->setCoefficientTermIndex (coefficientTermIndex);
-        newObject->refreshCoefficients();
+        newObject->refreshCoefficients(); // also resets the stencil
+        
+#ifdef CREATECCODE
         if (appState == editObjectState)
             newObject->setCurName (editingObject->getCurName());
+#endif
         newObject->createUpdateEq();
         newObject->addChangeListener (this);
         if (appState == editObjectState)
@@ -439,6 +451,7 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
     if (appState == normalAppState)
         return false;
     
+    int dim = calculator->getDimension();
     // if not a capital letter
     if (!(ModifierKeys::getCurrentModifiers() == ModifierKeys::shiftModifier && CharacterFunctions::isLetter (key.getTextCharacter())))
     {
@@ -458,7 +471,7 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
                 if (calculator->getButton("102")->isEnabled())
                     buttonToClick = StringCode::getEncoded()[2];
                 else
-                    buttonToClick = StringCode::getEncoded()[12];
+                    buttonToClick = StringCode::getEncoded()[15];
                 break;
             case 'g':
                 buttonToClick = StringCode::getEncoded()[3];
@@ -476,16 +489,16 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
                 buttonToClick = StringCode::getEncoded()[7];
                 break;
             case 'b':
-                buttonToClick = StringCode::getEncoded()[8];
+                buttonToClick = dim == 2 ? StringCode::getEncoded()[11] : StringCode::getEncoded()[8];
                 break;
             case 'n':
-                buttonToClick = StringCode::getEncoded()[9];
+                buttonToClick = dim == 2 ? StringCode::getEncoded()[12] : StringCode::getEncoded()[9];
                 break;
             case 'm':
-                buttonToClick = StringCode::getEncoded()[10];
+                buttonToClick = dim == 2 ? StringCode::getEncoded()[13] : StringCode::getEncoded()[10];
                 break;
             case 'u':
-                buttonToClick = StringCode::getEncoded()[11];
+                buttonToClick = StringCode::getEncoded()[14];
                 break;
             case 127:
                 buttonToClick = "backspace";
@@ -497,7 +510,7 @@ bool MainComponent::keyPressed (const KeyPress& key, Component* originatingCompo
         
         if (buttonToClick != "NOBUTTON")
             if (calculator->getButton (buttonToClick)->isEnabled())
-                calculator->buttonClicked (calculator->getButton (buttonToClick));
+                calculator->buttonClicked (calculator->getButton (buttonToClick).get());
     }
     else
     {
@@ -534,7 +547,7 @@ bool MainComponent::keyStateChanged (bool isKeyDown, Component* originatingCompo
     {
         calculator->returnKeyIsDown = true;
         if (!calculator->createPMalreadyClicked)
-            calculator->buttonClicked (calculator->getButton("createPM"));
+            calculator->buttonClicked (calculator->getButton("createPM").get());
     }
     else if (calculator->returnKeyIsDown) // this means that the return key is released
     {
@@ -581,6 +594,17 @@ void MainComponent::create (String model)
         coeffValues.push_back (0);
         coeffValues.push_back (0.000);
     }
+    else if (model == "plate")
+    {
+        coeffNames.push_back("K");
+//        coeffNames.push_back("SO");
+//        coeffNames.push_back("ST");
+//        equationString = "203_300_100_901_" + coeffNames[0] + "--_210_210_300_";
+        equationString = "203_300_100_901_K--_210_210_300_"; //102_SO-_202_300_101_ST-_210_201_300_";
+        coeffValues.push_back (1000);
+//        coeffValues.push_back (10);
+//        coeffValues.push_back (0.005);
+    }
     else if (model == "mass-spring")
     {
         coeffNames.push_back ("W");
@@ -595,7 +619,7 @@ void MainComponent::create (String model)
     for (int i = 0; i < coeffNames.size(); ++i)
         addCoefficient (true, coeffNames[i], coeffValues[i], false);
     
-    calculator->setEquationString(equationString);
+    calculator->setEquationString (equationString);
     createPhysicalModel();
     resized();
 }

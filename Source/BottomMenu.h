@@ -42,19 +42,21 @@ public:
     
 private:
     
-    ScopedPointer<TextButton> newButton;
+    std::unique_ptr<TextButton> newButton;
     Label cpuUsage;
     OwnedArray<TextButton> modelButtons;
     String model = "";
     OwnedArray<Slider> coeffSliders;
     
-    ScopedPointer<ToggleButton> muteButton;
+    std::unique_ptr<ToggleButton> muteButton;
     
     Label graphicsLabel;
     Slider graphicsSlider;
     
     Action action = noAction;
     ApplicationState appState;
+    
+    StringArray models = {"string", "plate"};
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BottomMenu)
 };

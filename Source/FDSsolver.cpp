@@ -83,7 +83,7 @@ bool FDSsolver::solve (String& equationString, Equation& stencil, NamedValueSet*
         calculateGridSpacing (tokens, coeffValues, stencil, numTerms);
     
     stencil.setNumPointsFromGridSpacing (h);
-    h = 1.0 / (static_cast<double> (stencil.getNumPoints()));
+    h = 1.0 / pow (static_cast<double> (stencil.getNumPoints()), 1.0 / stencil.getDimension());
     
     for (int i = 0; i < tokens.size(); ++i)
     {
@@ -97,7 +97,7 @@ bool FDSsolver::solve (String& equationString, Equation& stencil, NamedValueSet*
         {
             // Add a new empty (u_l^n) term to the terms vector
             terms.push_back (Equation (stencil.getTimeSteps(), stencil.getStencilWidth(), true));
-            
+            terms[terms.size() - 1].setDimension (stencil.getDimension());
             // Increase the term index
             ++termIdx;
             newTermFlag = false;
@@ -143,7 +143,13 @@ bool FDSsolver::solve (String& equationString, Equation& stencil, NamedValueSet*
                         secondOrderX (terms[termIdx]);
                         break;
                     case 208:
-                        fourthOrderX (terms[termIdx]);
+                        secondOrderX (terms[termIdx]);
+                        break;
+                    case 209:
+                        secondOrderY (terms[termIdx]);
+                        break;
+                    case 210:
+                        secondOrder2D (terms[termIdx]);
                         break;
                 }
                 break;
@@ -373,8 +379,17 @@ double FDSsolver::calculateGridSpacing (StringArray& tokens, NamedValueSet* coef
 //    if (eq.getStencilWidth() == 5)
 //        h = sqrt(2 * static_cast<double>(coeff) * k);
 //        else if (eq.getStencilWidth() == 3)
-    
-    if (stencil.getStencilWidth() == 3)
+    if (stencil.getDimension() == 2)
+    {
+        if (coeffValues[0].size() <= 2)
+        {
+            h = 2 * sqrt (k * sqrt(static_cast<double>(coeffValues[0].getValueAt (0))));
+        } else {
+            double sig1 = static_cast<double> (coeffValues[0].getValueAt(2)) * 0.5;
+            h = 2 * sqrt (k * (sig1 * sig1 + sqrt(static_cast<double>(coeffValues[0].getValueAt (0)) + sig1 * sig1)));
+        }
+    }
+    else if (stencil.getStencilWidth() == 3)
     {
         h = sqrt (static_cast<double> (coeffValues[0].getValueAt (0))) * k;
     }
@@ -386,7 +401,7 @@ double FDSsolver::calculateGridSpacing (StringArray& tokens, NamedValueSet* coef
         {
             h = sqrt (sqrt(static_cast<double>(coeffValues[0].getValueAt (0))) * k * 2);
         } else {
-            double sig1 = coeffValues[0].getValueAt(2);
+            double sig1 = static_cast<double> (coeffValues[0].getValueAt(2)) * 0.5;
             h = sqrt((4.0f * sig1 * k + sqrt(pow(4.0f * sig1 * k, 2) + 16.0 * kappaSq * k * k)) / 2.0f);
         }
     }
@@ -436,26 +451,7 @@ bool FDSsolver::checkSyntax (StringArray& tokens)
         }
         
         std::vector<int> notAllowedCharacters;
-        switch (prevTermType)
-        {
-            case 0:
-                notAllowedCharacters.push_back(1);
-                break;
-            case 1:
-                notAllowedCharacters.push_back(1); //except a minus!!
-                break;
-            case 2:
-                notAllowedCharacters.push_back(1);
-                notAllowedCharacters.push_back(9);
-                break;
-            case 3:
-                notAllowedCharacters.push_back(2);
-                notAllowedCharacters.push_back(3);
-                notAllowedCharacters.push_back(9);
-                break;
-            case 9:
-                break;
-        }
+        checkNotAllowedCharacters (prevTermType, notAllowedCharacters);
         
         // if the character can't be after the previous one, give an error
         if (std::find(notAllowedCharacters.begin(), notAllowedCharacters.end(), firstInt) != notAllowedCharacters.end())
@@ -475,11 +471,28 @@ bool FDSsolver::checkSyntax (StringArray& tokens)
     return true;
 }
 
-// Function should never return false
-bool FDSsolver::checkAllowedCharacters (StringArray& tokens)
+void FDSsolver::checkNotAllowedCharacters (int firstInt, std::vector<int>& notAllowedCharacters)
 {
-    
-    return true;
+    switch (firstInt)
+    {
+        case 0:
+            notAllowedCharacters.push_back(1);
+            break;
+        case 1:
+            notAllowedCharacters.push_back(1); //except a minus!!
+            break;
+        case 2:
+            notAllowedCharacters.push_back(1);
+            notAllowedCharacters.push_back(9);
+            break;
+        case 3:
+            notAllowedCharacters.push_back(2);
+            notAllowedCharacters.push_back(3);
+            notAllowedCharacters.push_back(9);
+            break;
+        case 9:
+            break;
+    }
 }
 
 // OPERATORS //
@@ -490,8 +503,7 @@ Equation& FDSsolver::forwDiffX (Equation& eq)
         for (int j = eq.getStencilWidth() - 2; j >= 0; --j)
             eq.getUCoeffs(i)[j + 1] = eq.getUCoeffs(i)[j] - eq.getUCoeffs(i)[j + 1];
     
-    if (!stabilityFlag)
-        eq = eq * (1.0 / h);
+    eq = eq * (1.0 / h);
     
     return eq;
 }
@@ -502,8 +514,7 @@ Equation& FDSsolver::backDiffX (Equation& eq)
         for (int j = 1; j < eq.getStencilWidth(); ++j)
             eq.getUCoeffs(i)[j - 1] -= eq.getUCoeffs(i)[j];
     
-    if (!stabilityFlag)
-        eq = eq * (1.0 / h);
+    eq = eq * (1.0 / h);
     
     return eq;
 }
@@ -524,42 +535,57 @@ Equation& FDSsolver::centDiffX (Equation& eq)
             eq.getUCoeffs(i)[j] -= tmpSpace[j];
         }
     }
-    if (!stabilityFlag)
-        eq = eq * (1.0 / (2 * h));
+    eq = eq * (1.0 / (2 * h));
     
     return eq;
-//    std::vector<double> tmpUNext (eq->getStencilWidth(), 0);
-//    std::vector<double> tmpU (eq->getStencilWidth(), 0);
-//    std::vector<double> tmpUPrev (eq->getStencilWidth(), 0);
+}
+
+Equation& FDSsolver::forwDiffY (Equation& eq)
+{
+    int horStencilWidth = pow(eq.getStencilWidth(), 1.0 / eq.getDimension());
+    for (int i = 0; i < eq.getTimeSteps(); ++i)
+        for (int j = eq.getStencilWidth() - horStencilWidth; j >= 0; --j)
+            eq.getUCoeffs(i)[j + horStencilWidth] = eq.getUCoeffs(i)[j] - eq.getUCoeffs(i)[j + horStencilWidth];
+    
+    eq = eq * (1.0 / h);
+    
+    return eq;
+}
+
+Equation& FDSsolver::backDiffY (Equation& eq)
+{
+    int horStencilWidth = pow(eq.getStencilWidth(), 1.0 / (eq.getDimension()));
+    for (int i = 0; i < eq.getTimeSteps(); ++i)
+        for (int j = horStencilWidth; j < eq.getStencilWidth(); ++j)
+            eq.getUCoeffs(i)[j - horStencilWidth] -= eq.getUCoeffs(i)[j];
+
+    eq = eq * (1.0 / h);
+
+    return eq;
+}
 //
-//    for (int i = 0; i < eq->getStencilWidth(); ++i)
+Equation& FDSsolver::centDiffY (Equation& eq)
+{
+//    for (int i = 0; i < eq.getTimeSteps(); ++i)
 //    {
-//        tmpUNext[i] = eq->getUNextCoeffs()[i];
-//        tmpU[i] = eq->getUCoeffs()[i];
-//        tmpUPrev[i] = eq->getUPrevCoeffs()[i];
+//        std::vector<double> tmpSpace (eq.getStencilWidth(), 0);
+//        for (int j = 0; j < eq.getStencilWidth(); ++j)
+//        {
+//            tmpSpace[j] = eq.getUCoeffs(i)[j];
+//        }
+//        for (int j = 0; j < eq.getStencilWidth() - 1; ++j)
+//        {
+//            eq.getUCoeffs(i)[j + 1] += tmpSpace[j];
+//            eq.getUCoeffs(i)[j - 1] -= tmpSpace[j];
+//            eq.getUCoeffs(i)[j] -= tmpSpace[j];
+//        }
 //    }
-//
-//
-//    for (int i = 0; i < eq->getStencilWidth(); ++i)
-//    {
-//        bool leftbound = i == 0 ? true : false;
-//        bool rightbound = i == eq->getStencilWidth() - 1 ? true : false;
-//        tmpUNext[i] = tmpUNext[i] + (rightbound ? 0 : eq->getUNextCoeffs()[i+1] ) - (leftbound ? 0 : eq->getUNextCoeffs()[i-1]) - eq->getUNextCoeffs()[i];
-//        tmpU[i] = tmpU[i] + (rightbound ? 0 : eq->getUCoeffs()[i+1]) - (leftbound ? 0 : eq->getUCoeffs()[i-1]) - eq->getUCoeffs()[i];
-//        tmpUPrev[i] = tmpUPrev[i] + (rightbound ? 0 : eq->getUPrevCoeffs()[i+1]) - (leftbound ? 0 : eq->getUPrevCoeffs()[i-1]) - eq->getUPrevCoeffs()[i];
-//    }
-//
-//    for (int i = 0; i < eq->getStencilWidth(); ++i)
-//    {
-//        eq->getUNextCoeffs()[i] = tmpUNext[i];
-//        eq->getUCoeffs()[i] = tmpU[i];
-//        eq->getUPrevCoeffs()[i] = tmpUPrev[i];
-//    }
-//
-//    *eq = (*eq) * (1.0 / (2*h));
+//    eq = eq * (1.0 / (2 * h));
 //
 //    return eq;
 }
+
+
 
 Equation& FDSsolver::forwDiffT (Equation& eq)
 {
@@ -567,8 +593,7 @@ Equation& FDSsolver::forwDiffT (Equation& eq)
         for (int j = 0; j < eq.getStencilWidth(); ++j)
             eq.getUCoeffs(i - 1)[j] = eq.getUCoeffs(i)[j] - eq.getUCoeffs(i - 1)[j];
 
-    if (!stabilityFlag)
-        eq = eq * (1.0 / k);
+    eq = eq * (1.0 / k);
     
     return eq;
 }
@@ -579,8 +604,7 @@ Equation& FDSsolver::backDiffT (Equation& eq)
         for (int j = 0; j < eq.getStencilWidth(); ++j)
             eq.getUCoeffs(i + 1)[j] -= eq.getUCoeffs(i)[j];
     
-    if (!stabilityFlag)
-        eq = eq * (1.0 / k);
+    eq = eq * (1.0 / k);
     
     return eq;
 }
@@ -602,40 +626,41 @@ Equation& FDSsolver::centDiffT (Equation& eq)
         }
     }
     
-    if (!stabilityFlag)
-        eq = eq * (1.0 / (2 * k));
+    eq = eq * (1.0 / (2 * k));
     
     return eq;
 }
 
-int FDSsolver::getStencilWidth (String& equationString, bool checkSpace)
+int FDSsolver::getStencilWidthFromEqString (String& equationString, bool checkSpatial)
 {
     StringArray tokens;
     tokens.addTokens (equationString, "_", "\"");
     tokens.remove (tokens.size() - 1);
     
-    bool derivFlag = false;
+    // start with a stencilsize of 1
     int stencilSize = 1;
+    
     int posTmpStencilSize = 0;
     int negTmpStencilSize = 0;
     
+    // If the model is 2D...
+    bool twoD = false;
+    
+    // check stencilsize per term
     for (int i = 0; i < tokens.size(); ++i)
     {
-        if (!checkSpace)
+        if (!checkSpatial)
         {
             switch (tokens[i].getIntValue())
             {
-                case 200:
-                    derivFlag = true;
+                case 200: // d_t+
                     ++posTmpStencilSize;
                     break;
-                case 201:
-                    derivFlag = true;
+                case 201: // d_t-
                     ++negTmpStencilSize;
                     break;
-                case 202:
-                case 203:
-                    derivFlag = true;
+                case 202: // d_{t\dot}
+                case 203: // d_{tt}
                     ++posTmpStencilSize;
                     ++negTmpStencilSize;
                     break;
@@ -643,35 +668,49 @@ int FDSsolver::getStencilWidth (String& equationString, bool checkSpace)
         } else {
             switch (tokens[i].getIntValue())
             {
-                case 204:
-                    derivFlag = true;
+                case 204: // d_x+
                     ++posTmpStencilSize;
                     break;
-                case 205:
-                    derivFlag = true;
+                case 205: // d_x-
                     ++negTmpStencilSize;
                     break;
-                case 206:
-                case 207:
-                    derivFlag = true;
+                case 206: // d_{x\dot}
+                case 207: // d_{xx}
                     ++posTmpStencilSize;
                     ++negTmpStencilSize;
+                    break;
+                case 208:
+                case 209:
+                case 210:
+                    ++posTmpStencilSize;
+                    ++negTmpStencilSize;
+                    twoD = true;
                     break;
             }
         }
+        
+        // check if the current term has a wider (temporal/spatial) stencil than what has already been saved
         if (tokens[i].substring(0, 1).getIntValue() != 2)
         {
-            derivFlag = false;
+//            derivFlag = false;
             int tmpStencilSize = 2 * std::max (posTmpStencilSize, negTmpStencilSize) + 1;
+            
+            // if the term has a wider stencil than the saved stencilsize, update the stencilSize variable
             if (tmpStencilSize > stencilSize)
             {
                 stencilSize = tmpStencilSize;
             }
+            
+            // reset stencil
             posTmpStencilSize = 0;
             negTmpStencilSize = 0;
         }
     }
     
+    // If the stencil is two-dimensional, square the stencil size (note: this is all assuming that the stencil is symmetric in all spatial directions)
+    if (twoD)
+        stencilSize = stencilSize * stencilSize;
+
     return stencilSize;
 }
 
@@ -681,4 +720,19 @@ bool FDSsolver::checkIfCoefficientExists (String& coeff)
         if (coefficient->getName() == coeff)
             return true;
     return false;
+}
+
+int FDSsolver::checkDimension (String equationString)
+{
+    StringArray tokens;
+    tokens.addTokens (equationString, "_", "\"");
+    tokens.remove (tokens.size() - 1);
+    for (int i = 0; i < tokens.size(); ++i)
+    {
+        if (tokens[i].getIntValue() >= 204 && tokens[i].getIntValue() < 208)
+            return 1;
+        else if (tokens[i].getIntValue() >= 208 && tokens[i].getIntValue() < 212)
+            return 2;
+    }
+    return 0;
 }

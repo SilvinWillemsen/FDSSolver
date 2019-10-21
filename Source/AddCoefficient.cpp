@@ -141,6 +141,14 @@ void AddCoefficient::buttonClicked (Button* button)
     }
 }
 
+void AddCoefficient::setCoeffValue (var value)
+{
+    if (static_cast<int> (value) == -1)
+        valueTextBox.setText("");
+    else
+        valueTextBox.setText (String(static_cast<double> (value)));
+    
+}
 void AddCoefficient::textEditorReturnKeyPressed (TextEditor& textBox)
 {
     buttonClicked (&addCoeff);

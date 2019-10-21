@@ -16,15 +16,15 @@ BottomMenu::BottomMenu()
 {
     // In your constructor, you should add any child components, and
     // initialise any special settings that your component needs.
-    newButton = new TextButton();
+    newButton = std::make_unique<TextButton>();
     newButton->setButtonText("New Model");
     newButton->addListener (this);
-    addAndMakeVisible (newButton);
+    addAndMakeVisible (newButton.get());
     
-    muteButton = new ToggleButton();
+    muteButton = std::make_unique<ToggleButton>();
     muteButton->setButtonText("Mute");
     muteButton->addListener (this);
-    addAndMakeVisible (muteButton);
+    addAndMakeVisible (muteButton.get());
     
     cpuUsage.setColour(Label::textColourId, Colours::white);
     addAndMakeVisible (cpuUsage);
@@ -39,12 +39,14 @@ BottomMenu::BottomMenu()
     addAndMakeVisible (graphicsSlider);
     
     modelButtons.add (new TextButton());
-    modelButtons[0]->setButtonText("Create String");
+    modelButtons[0]->setName(models[0]);
+    modelButtons[0]->setButtonText("Create " + models[0]);
     addAndMakeVisible (modelButtons[0]);
     modelButtons[0]->addListener (this);
     
     modelButtons.add (new TextButton());
-    modelButtons[1]->setButtonText("Create Bar");
+    modelButtons[0]->setName(models[1]);
+    modelButtons[1]->setButtonText("Create " + models[1]);
     addAndMakeVisible (modelButtons[1]);
     modelButtons[1]->addListener (this);
     
@@ -99,7 +101,7 @@ void BottomMenu::buttonClicked (Button* button)
         return;
     }
 
-    if (button == newButton)
+    if (button == newButton.get())
     {
         if (appState == normalAppState)
             action = newObjectAction;
@@ -107,20 +109,20 @@ void BottomMenu::buttonClicked (Button* button)
             action = cancelNewObjectAction;
     }
     
-    if (button == muteButton)
+    if (button == muteButton.get())
     {
         action = muteAction;
     }
     
     if (button == modelButtons[0])
     {
-        model = "string";
+        model = models[0];
         action = createPredefinedModel;
     }
     
     if (button == modelButtons[1])
     {
-        model = "bar";
+        model = models[1];
         action = createPredefinedModel;
     }
     

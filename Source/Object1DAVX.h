@@ -27,14 +27,14 @@ public:
     void resized() override;
     
     void calculateFDS() override;
-    double getOutput (double ratio) override;
+    double getOutput (double ratio, double unUsed) override;
     void updateStates() override;
     
     void excite() override;
     void setZero() override;
     
     Path visualiseState();
-    void changeBoundaryCondition();
+    void changeBoundaryCondition() override;
     
 private:
     // pointers to the different states

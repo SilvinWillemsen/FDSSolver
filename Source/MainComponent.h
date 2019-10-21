@@ -111,19 +111,19 @@ private:
     //==============================================================================
     
     // The calculator including equation textbox
-    ScopedPointer<Calculator> calculator;
+    std::unique_ptr<Calculator> calculator;
     
     // The FDS Solver (collection of functions)
-    ScopedPointer<FDSsolver> fdsSolver = nullptr;
+    std::unique_ptr<FDSsolver> fdsSolver = nullptr;
     
     // Window for adding a coefficient
-    ScopedPointer<AddCoefficient> addCoeffWindow;
+    std::unique_ptr<AddCoefficient> addCoeffWindow;
     
     // List of all coefficients in the application (even though not all are visible) containing coefficientcomponents
     CoefficientList coefficientList;
 
     // Window for adding a coefficient
-    ScopedPointer<BottomMenu> bottomMenu;
+    std::unique_ptr<BottomMenu> bottomMenu;
     
     // Physical models
     OwnedArray<Object> objects;

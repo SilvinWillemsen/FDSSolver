@@ -60,13 +60,14 @@ void Object1D::resized()
     }
 }
 
+#ifdef CREATECCODE
 void Object1D::createUpdateEq()
 {
     // initialise update equation blocks struct
     UEB ueb;
     
     // start code with "uNext[l] = :
-    String code = ueb.u(0) + " =";
+    String code = ueb.u(1, 0) + " =";
     
     // calculate half the stencil width
     int halfStencilWidth = (stencil.getStencilWidth() - 1) / 2.0;
@@ -83,12 +84,12 @@ void Object1D::createUpdateEq()
                 // if the value isn't 0...
                 if (stencil.getUCoeffAt(j, i) != 0)
                     // add to the codestring
-                    code += " - coeffs[" + String(i + (j - 1) * stencil.getStencilWidth()) + "] * (" + ueb.u(j, i - halfStencilWidth) + " + " + ueb.u(j, -i + halfStencilWidth) + ")";
+                    code += " - coeffs[" + String(i + (j - 1) * stencil.getStencilWidth()) + "] * (" + ueb.u(1, j, i - halfStencilWidth) + " + " + ueb.u(1, j, -i + halfStencilWidth) + ")";
             }
             // for the middle of the stencil
             if (stencil.getUCoeffAt(j, halfStencilWidth) != 0)
                 // add to the codestring
-                code += " - coeffs[" + String (halfStencilWidth + (j - 1) * stencil.getStencilWidth()) + "] * " + ueb.u(j);
+                code += " - coeffs[" + String (halfStencilWidth + (j - 1) * stencil.getStencilWidth()) + "] * " + ueb.u(1, j);
         }
     // if the stencil is not symmetric (for some reason)
     } else {
@@ -101,7 +102,7 @@ void Object1D::createUpdateEq()
                 // if the value isn't 0...
                 if (stencil.getUCoeffAt(j, i) != 0)
                     // add to the codestring
-                    code += " - coeffs[" + String (i + (j - 1) * stencil.getStencilWidth()) + "] * " + ueb.u(j, i - halfStencilWidth);
+                    code += " - coeffs[" + String (i + (j - 1) * stencil.getStencilWidth()) + "] * " + ueb.u(1, j, i - halfStencilWidth);
             }
         }
     }
@@ -115,24 +116,25 @@ void Object1D::createUpdateEq()
     // generate c-code
     updateEqGenerator (forLoop);
 }
+#endif
 
 void Object1D::calculateFDS()
 {
+#ifdef CREATECCODE
     // input states and coefficients in vector form
-    updateEq (u[0], u[1], u[2], &stencilVectorForm[0]);
-    
-///// OLD STUFF /////
-//    std::cout << "wait" << std::endl;
-//    for (int l = (boundaryConditions[0] == simplySupported ? 1 : 2);
-//             l < (boundaryConditions[1] == simplySupported ? N - 1 : N - 2); ++l)
-//    {
-//        u[0][l] = 0;
-//        for (int j = 0; j < stencil.getStencilWidth(); ++j)
-//        {
-////            u[0][l] = u[0][l] - stencil[1][j] * u[1][l - stencilIdxStart + j] - stencil[2][j] * u[2][l - stencilIdxStart + j];
-//            u[0][l] = u[0][l] - (curTimeStep[j] * u[1][l - stencilIdxStart + j] + prevTimeStep[j] * u[2][l - stencilIdxStart + j]);
-//        }
-//    }
+    updateEq (u[0], u[1], u[2], &stencilVectorForm[0], 0);
+#else
+    for (int l = (boundaryConditions[0] == simplySupported ? 1 : 2);
+             l < (boundaryConditions[1] == simplySupported ? N - 1 : N - 2); ++l)
+    {
+        u[0][l] = 0;
+        for (int j = 0; j < stencil.getStencilWidth(); ++j)
+        {
+//            u[0][l] = u[0][l] - stencil[1][j] * u[1][l - stencilIdxStart + j] - stencil[2][j] * u[2][l - stencilIdxStart + j];
+            u[0][l] = u[0][l] - (curTimeStep[j] * u[1][l - stencilIdxStart + j] + prevTimeStep[j] * u[2][l - stencilIdxStart + j]);
+        }
+    }
+#endif
 }
 
 void Object1D::updateStates()

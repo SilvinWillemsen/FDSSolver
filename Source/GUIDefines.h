@@ -12,6 +12,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 
 //#define USE_AVX
+#define CREATECCODE
 
 #ifdef USE_AVX
     #if __AVX2__
@@ -56,6 +57,9 @@ public:
             "205",
             "206",
             "207",
+            "208",
+            "209",
+            "210",
             "300",
             "901"
         };
@@ -76,6 +80,9 @@ public:
             String(CharPointer_UTF8 ("\xce\xb4")) + "x-",
             String(CharPointer_UTF8 ("\xce\xb4")) + "x" + String (CharPointer_UTF8 ("\xc2\xb7")),
             String(CharPointer_UTF8 ("\xce\xb4")) + "xx",
+            String(CharPointer_UTF8 ("\xce\xb4")) + "xx",
+            String(CharPointer_UTF8 ("\xce\xb4")) + "yy",
+            String(CharPointer_UTF8 ("\xce\x94")),
             "u",
             "-"
         };
@@ -96,49 +103,129 @@ public:
 
 struct UEB // update equation blocks
 {
-    String u (int time, int l = 0)
+    String u (int numDim, int time, int l = 0, int m = 0)
     {
+        String res = "u";
         switch (time)
         {
             case 0:
-                return uNext(l);
+                res += "Next";
+                break;
             case 1:
-                return uCur(l);
+                break;
             case 2:
-                return uPrev(l);
+                res += "Prev";
+                break;
             default:
                 std::cout << "Not Possible" << std::endl;
                 return "";
         };
+        res += "[l";
+        
+        if (l < 0)
+            res += String(l);
+        else if (l > 0)
+            res += "+" + String(l);
+        
+        if (numDim == 2)
+        {
+            res += " + ";
+            if (m < 0)
+                res += "(m" + String(m) + ") * Nx";
+            else if (m == 0)
+                res += "m * Nx";
+            else if (m > 0)
+                res += "(m+" + String(m) + ") * Nx";
+        }
+        res += "]";
+        return res; 
     }
     
-    String uNext (int l = 0) {
-        if (l < 0)
-            return "uNext[l" + String(l) + "]";
-        else if (l == 0)
-            return "uNext[l]";
-        else
-            return "uNext[l+" + String(l) + "]";
-    };
-    String uCur (int l = 0) {
-        if (l < 0)
-            return "u[l" + String(l) + "]";
-        else if (l == 0)
-            return "u[l]";
-        else
-            return "u[l+" + String(l) + "]";
-    };
-    String uPrev (int l = 0) {
-        if (l < 0)
-            return "uPrev[l" + String(l) + "]";
-        else if (l == 0)
-            return "uPrev[l]";
-        else
-            return "uPrev[l+" + String(l) + "]";
-    };
+//    String uNext (int l = 0) {
+//        if (l < 0)
+//            return "uNext[l" + String(l) + "]";
+//        else if (l == 0)
+//            return "uNext[l]";
+//        else
+//            return "uNext[l+" + String(l) + "]";
+//    };
+//    String uCur (int l = 0) {
+//        if (l < 0)
+//            return "u[l" + String(l) + "]";
+//        else if (l == 0)
+//            return "u[l]";
+//        else
+//            return "u[l+" + String(l) + "]";
+//    };
+//    String uPrev (int l = 0) {
+//        if (l < 0)
+//            return "uPrev[l" + String(l) + "]";
+//        else if (l == 0)
+//            return "uPrev[l]";
+//        else
+//            return "uPrev[l+" + String(l) + "]";
+//    };
     String forLoop (String eq, int bound, int N) {
         return "\n for (int l = " + String(bound) + "; l < " + String(N - bound) + "; ++l)" +
         "\n { \n    " + eq + " \n }";
+    };
+    
+//    String uNext2D (int l = 0, int m = 0) {
+//        String res = "uNext[l";
+//        if (l < 0)
+//            res += String(l);
+//        else if (l > 0)
+//            res += "+" + String(l);
+//        
+//        res += "+m";
+//        if (m < 0)
+//            res += "(m" + String(m) + ") * Nx";
+//        else if (m == 0)
+//            res += "m * Nx"
+//        else if (m > 0)
+//            res += "+(m" + String(m) + ") * Nx"
+//
+//        res += "]";
+//    };
+//    String uCur2D (int l = 0,  int m = 0) {
+//        String res = "u[l";
+//        if (l < 0)
+//            res += String(l);
+//        else if (l > 0)
+//            res += "+" + String(l);
+//
+//        res += "+m";
+//        if (m < 0)
+//            res += "(m" + String(m) + ") * Nx";
+//        else if (m == 0)
+//            res += "m * Nx"
+//            else if (m > 0)
+//                res += "+(m" + String(m) + ") * Nx"
+//
+//                res += "]";
+//    };
+//    String uPrev2d (int l = 0,  int m = 0) {
+//        String res = "uPrev[l";
+//        if (l < 0)
+//            res += String(l);
+//        else if (l > 0)
+//            res += "+" + String(l);
+//
+//        res += "+m";
+//        if (m < 0)
+//            res += "(m" + String(m) + ") * Nx";
+//        else if (m == 0)
+//            res += "m * Nx"
+//            else if (m > 0)
+//                res += "+(m" + String(m) + ") * Nx"
+//
+//                res += "]";
+//    };
+    
+    String forLoop2D (String eq, int bound, int Nx, int Ny) {
+        return "\n for (int l = " + String(bound) + "; l < " + String(Nx - bound + 1) + "; ++l) \n {" +
+        "for (int m = " + String(bound) + "; m < " + String(Ny - bound + 1) + "; ++m)" +
+        "\n { \n    " + eq + " \n } \n }";
     };
 };
 
@@ -189,4 +276,5 @@ public:
     static const int AVXnum = AVXdouble ? 4 : 8;
     static const int listBoxRowHeight = 40;
 
+    static const int maxDim = 2;
 };

@@ -57,7 +57,8 @@ public:
     
     virtual void createUpdateEq(){}; // = 0
     virtual void calculateFDS() = 0;
-    virtual double getOutput (double ratio) = 0;
+    
+    virtual double getOutput (double ratioX, double ratioY = 0) = 0;
     virtual void updateStates() = 0;
     
     virtual void excite() {};
@@ -114,6 +115,7 @@ public:
         return val;
     }
     
+#ifdef CREATECCODE
     const char* toConstChar (String string) { return static_cast<const char*> (string.toUTF8()); }
     unsigned long getCurName() { return curName; };
     void setCurName (unsigned long cN) { curName = cN; };
@@ -123,6 +125,10 @@ public:
         String systemInstr = String ("rm " + String (curName) + ".so \n rm -R " + String (curName) + ".so.dSYM").toUTF8();
         system (toConstChar (systemInstr));
     }
+#endif
+    
+    int getDimension() { return dim; };
+    
 protected:
     
     // Store different parts of the equation separately in terms. This includes (fx.) the 1/k^2 and 1/h^2 of the \delta_{tt} and \delta_{xx} operators, but not the coefficients as these can be dyamic
@@ -191,11 +197,12 @@ protected:
     
     int boundaryChangeIdx = -1; // for 1D object left = 0, right = 1.
 
+#ifdef CREATECCODE
     void updateEqGenerator (String& eqString);
-
-    void (*updateEq) (double* uNext, double* u, double* uPrev, double* parameters);
-    
+    void (*updateEq) (double* uNext, double* u, double* uPrev, double* parameters, int Nx);
     unsigned long curName = 0;
+#endif
+    int dim;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Object)
 };

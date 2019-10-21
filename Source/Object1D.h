@@ -25,9 +25,12 @@ public:
     void paint (Graphics& g) override;
     void resized() override;
     
+#ifdef CREATECCODE
     void createUpdateEq() override;
+#endif
+    
     void calculateFDS() override;
-    double getOutput (double ratio) override { int idx = floor (N * ratio); return u[1][idx]; };
+    double getOutput (double ratio, double unUsed) override { int idx = floor (N * ratio); return u[1][idx]; };
     void updateStates() override;
 
     void excite() override;
